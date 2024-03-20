@@ -1,0 +1,2 @@
+# MapGenerator
+Basic Map Generator
