@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Parking Game Level Generator</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Car Parking Game Level Generator</h1>
+        <form id="levelForm">
+            <div class="form-row">
+                <div class="form-group col-md-9">
+                    <label for="fileInput" class="btn btn-primary">Choose JSON File</label>
+                    <input type="file" class="form-control-file" id="fileInput" accept=".json" style="display: none;">
+                </div>
+            </div>
+            <div class="form-row">
+                <!-- Add this code inside the form -->
+                <div class="form-group col-md-3">
+                    <label for="useDFS">Use DFS:</label>
+                    <input type="checkbox" class="form-control" id="useDFS" name="useDFS">
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="width">Grid Width:</label>
+                    <div class="slider-container">
+                        <input type="range" class="form-control" id="width" name="width" min="1" max="20" value="10">
+                        <div class="sliderValueContainer">
+                            <span class="slider-min">1</span>
+                            <span class="slider-value" id="widthValue">10</span>
+                            <span class="slider-max">20</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="height">Grid Height:</label>
+                    <div class="slider-container">
+                        <input type="range" class="form-control" id="height" name="height" min="1" max="20" value="10">
+                        <div class="sliderValueContainer">
+                            <span class="slider-min">1</span>
+                            <span class="slider-value" id="heightValue">10</span>
+                            <span class="slider-max">20</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="difficulty">Difficulty (1-10):</label>
+                    <div class="slider-container">
+                        <input type="range" class="form-control" id="difficulty" name="difficulty" min="1" max="10"
+                            value="5">
+                        <div class="sliderValueContainer">
+                            <span class="slider-min">1</span>
+                            <span class="slider-value" id="difficultyValue">5</span>
+                            <span class="slider-max">10</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="seed">Seed Value:</label>
+                    <input type="text" class="form-control" id="seed" name="seed">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <button type="submit" class="btn btn-primary btn-block">Generate Level</button>
+                </div>
+                <div class="form-group col-md-3">
+                    <button type="button" class="btn btn-success" id="exportBtn" disabled>Export Level</button>
+                </div>
+            </div>
+        </form>
+
+        <div id="gridContainer" class="grid mt-4"></div>
+        <!-- Add this code inside the container div -->
+        <div id="sidebar" class="sidebar">
+            <button id="addCarBtn" class="btn btn-primary mb-2">Add Car</button>
+            <button id="removeCarBtn" class="btn btn-danger mb-2">Remove Car</button>
+            <button id="setStartBtn" class="btn btn-success mb-2">Set Start</button>
+            <button id="setEndBtn" class="btn btn-success mb-2">Set End</button>
+        </div>
+        <div id="jsonDisplay" class="mt-4" style="display: none;">
+            <h2>Generated JSON</h2>
+            <pre id="jsonContent"></pre>
+        </div>
+    </div>
+
+    <!-- Add this code before the closing body tag -->
+    <div id="loading-bar" class="progress" style="display: none;">
+        <div id="loading-bar-inner" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+            aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"></div>
+    </div>
+
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+    <script src="script.js" defer></script>
+</body>
+
+</html>
