@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Car Parking Game Level Generator</title>
+    <title>Parking Lot Level Generator</title>
     <style>
         :root {
             --bg-color: #f8f9fa;
@@ -21,12 +21,15 @@
             --start-color: #28a745;
             --end-color: #dc3545;
             --car-color: #007bff;
+            --road-color: #6c757d;
+            --parking-spot-color: #e9ecef;
             --sidebar-bg: #f1f1f1;
             --active-btn-bg: #e2e6ea;
             --slider-thumb: #007bff;
             --slider-track: #d3d3d3;
             --json-bg: #f8f9fa;
             --json-text: #495057;
+            --parking-lane-color: #dee2e6;
         }
 
         [data-theme="dark"] {
@@ -44,12 +47,15 @@
             --start-color: #198754;
             --end-color: #dc3545;
             --car-color: #0d6efd;
+            --road-color: #495057;
+            --parking-spot-color: #343a40;
             --sidebar-bg: #2d2d2d;
             --active-btn-bg: #3d3d3d;
             --slider-thumb: #0d6efd;
             --slider-track: #495057;
             --json-bg: #2d2d2d;
             --json-text: #e9ecef;
+            --parking-lane-color: #343a40;
         }
 
         body {
@@ -186,13 +192,32 @@
         .grid {
             border-radius: 8px;
             padding: 15px;
-            background-color: var(--container-bg);
+            /* background-color: var(--road-color); */
             box-shadow: 0 2px 4px var(--shadow-color);
             display: grid;
-            grid-template-columns: repeat(var(--cols), 40px);
-            gap: 4px;
+            grid-template-columns: repeat(var(--cols), 30px);
+            /* gap: 4px; */
             margin: 0 auto;
             transition: all 0.3s;
+        }
+
+        .parking-lane {
+            background-color: var(--parking-lane-color);
+            display: grid;
+            justify-content: space-between;
+            padding: 5px;
+            border-radius: 4px;
+            /* margin-bottom: 4px; */
+        }
+
+        .parking-lane.horizontal {
+            flex-direction: row;
+        }
+
+        .parking-lane.vertical {
+            flex-direction: column;
+            align-items: center;
+            padding: 5px;
         }
 
         .sidebar {
@@ -208,10 +233,10 @@
         }
 
         .cell {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             border: 1px solid var(--border-color);
-            background-color: var(--cell-bg);
+            background-color: var(--parking-spot-color);
             border-radius: 4px;
             transition: all 0.2s;
             cursor: pointer;
@@ -220,6 +245,7 @@
             justify-content: center;
             font-weight: bold;
             color: white;
+            position: relative;
         }
 
         .cell:hover {
@@ -237,6 +263,38 @@
 
         .car {
             background-color: var(--car-color);
+        }
+
+        .car::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+
+        .car.up::after {
+            border-width: 0 8px 12px 8px;
+            border-color: transparent transparent white transparent;
+            bottom: 5px;
+        }
+
+        .car.down::after {
+            border-width: 12px 8px 0 8px;
+            border-color: white transparent transparent transparent;
+            top: 5px;
+        }
+
+        .car.left::after {
+            border-width: 8px 12px 8px 0;
+            border-color: transparent white transparent transparent;
+            right: 5px;
+        }
+
+        .car.right::after {
+            border-width: 8px 0 8px 12px;
+            border-color: transparent transparent transparent white;
+            left: 5px;
         }
 
         .slider-container {
@@ -450,6 +508,21 @@
             color: var(--primary-color);
         }
 
+        .direction-controls {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .direction-btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         @media (max-width: 768px) {
             .grid-container {
                 flex-direction: column;
@@ -468,7 +541,7 @@
             }
 
             .grid {
-                grid-template-columns: repeat(var(--cols), 30px);
+                grid-template-columns: repeat(var(--cols), 40px);
             }
 
             .cell {
@@ -497,7 +570,7 @@
     </button>
 
     <div class="container">
-        <h1><i class="fas fa-car"></i> Car Parking Game Level Generator</h1>
+        <h1><i class="fas fa-parking"></i> Parking Lot Level Generator</h1>
         
         <form id="levelForm">
             <div class="form-row">
@@ -529,12 +602,12 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="width">Grid Width: <span id="widthValue">10</span></label>
-                    <input type="range" class="form-control" id="width" name="width" min="5" max="30" value="10">
+                    <input type="range" class="form-control" id="width" name="width" min="5" max="30" value="10" step="2">
                 </div>
                 
                 <div class="form-group">
                     <label for="height">Grid Height: <span id="heightValue">10</span></label>
-                    <input type="range" class="form-control" id="height" name="height" min="5" max="30" value="10">
+                    <input type="range" class="form-control" id="height" name="height" min="5" max="30" value="10" step="2">
                 </div>
                 
                 <div class="form-group">
@@ -588,6 +661,21 @@
                 <button id="clearAllBtn" class="btn btn-warning">
                     <i class="fas fa-broom"></i> Clear All
                 </button>
+                
+                <div class="direction-controls">
+                    <button id="setDirectionUp" class="btn btn-secondary direction-btn" title="Face Up">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                    <button id="setDirectionRight" class="btn btn-secondary direction-btn" title="Face Right">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button id="setDirectionDown" class="btn btn-secondary direction-btn" title="Face Down">
+                        <i class="fas fa-arrow-down"></i>
+                    </button>
+                    <button id="setDirectionLeft" class="btn btn-secondary direction-btn" title="Face Left">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -611,6 +699,10 @@
             <div class="stat-item">
                 <span class="stat-label">End Position:</span>
                 <span class="stat-value" id="endPosStat">(0, 0)</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Parking Layout:</span>
+                <span class="stat-value" id="layoutStat">Rows</span>
             </div>
         </div>
         
@@ -655,17 +747,26 @@
             const setEndBtn = document.getElementById('setEndBtn');
             const clearAllBtn = document.getElementById('clearAllBtn');
             
+            // Direction buttons
+            const setDirectionUp = document.getElementById('setDirectionUp');
+            const setDirectionRight = document.getElementById('setDirectionRight');
+            const setDirectionDown = document.getElementById('setDirectionDown');
+            const setDirectionLeft = document.getElementById('setDirectionLeft');
+            
             // Stats elements
             const gridSizeStat = document.getElementById('gridSizeStat');
             const carCountStat = document.getElementById('carCountStat');
             const difficultyStat = document.getElementById('difficultyStat');
             const startPosStat = document.getElementById('startPosStat');
             const endPosStat = document.getElementById('endPosStat');
+            const layoutStat = document.getElementById('layoutStat');
             
             // State variables
             let cellEditingMode = null;
             let generatedLevel = null;
             let isDarkMode = false;
+            let currentDirection = 'up';
+            let parkingLayout = 'rows'; // 'rows' or 'columns'
             
             // Initialize theme
             function initTheme() {
@@ -717,6 +818,51 @@
             randomSeedBtn.addEventListener('click', function() {
                 seedInput.value = generateRandomSeed();
             });
+            
+            // Direction button handlers
+            setDirectionUp.addEventListener('click', function() {
+                currentDirection = 'up';
+                updateDirectionButtons();
+            });
+            
+            setDirectionRight.addEventListener('click', function() {
+                currentDirection = 'right';
+                updateDirectionButtons();
+            });
+            
+            setDirectionDown.addEventListener('click', function() {
+                currentDirection = 'down';
+                updateDirectionButtons();
+            });
+            
+            setDirectionLeft.addEventListener('click', function() {
+                currentDirection = 'left';
+                updateDirectionButtons();
+            });
+            
+            function updateDirectionButtons() {
+                // Reset all buttons
+                setDirectionUp.classList.remove('active');
+                setDirectionRight.classList.remove('active');
+                setDirectionDown.classList.remove('active');
+                setDirectionLeft.classList.remove('active');
+                
+                // Activate current direction
+                switch(currentDirection) {
+                    case 'up':
+                        setDirectionUp.classList.add('active');
+                        break;
+                    case 'right':
+                        setDirectionRight.classList.add('active');
+                        break;
+                    case 'down':
+                        setDirectionDown.classList.add('active');
+                        break;
+                    case 'left':
+                        setDirectionLeft.classList.add('active');
+                        break;
+                }
+            }
             
             // Sidebar button functionality
             addCarBtn.addEventListener('click', function () {
@@ -792,7 +938,7 @@
                     
                     switch (cellEditingMode) {
                         case 'addCar':
-                            addCar(columnIndex, rowIndex);
+                            addCar(columnIndex, rowIndex, currentDirection);
                             break;
                         case 'removeCar':
                             removeCar(columnIndex, rowIndex);
@@ -810,14 +956,33 @@
             });
             
             // Modify grid functions
-            function addCar(x, y) {
+            function addCar(x, y, direction) {
                 if (generatedLevel && generatedLevel.grid) {
                     // Check if the cell is already a car or is start/end
-                    if (!generatedLevel.cars.some(car => car[0] === x && car[1] === y) &&
+                    if (!generatedLevel.cars.some(car => car.x === x && car.y === y) &&
                         (x !== generatedLevel.start[0] || y !== generatedLevel.start[1]) &&
                         (x !== generatedLevel.end[0] || y !== generatedLevel.end[1])) {
-                        generatedLevel.cars.push([x, y]);
-                        generatedLevel.grid[y][x] = 'car';
+                        
+                        // Determine direction based on parking layout
+                        let finalDirection = direction;
+                        if (parkingLayout === 'rows') {
+                            // For row layout, cars in even rows face up/down, odd rows face opposite
+                            if (y % 2 === 0) {
+                                finalDirection = 'up';
+                            } else {
+                                finalDirection = 'down';
+                            }
+                        } else {
+                            // For column layout, cars in even columns face left/right, odd columns face opposite
+                            if (x % 2 === 0) {
+                                finalDirection = 'left';
+                            } else {
+                                finalDirection = 'right';
+                            }
+                        }
+                        
+                        generatedLevel.cars.push({x, y, direction: finalDirection});
+                        generatedLevel.grid[y][x] = {type: 'car', direction: finalDirection};
                         displayLevel(generatedLevel);
                         updateStats();
                     }
@@ -828,9 +993,9 @@
             
             function removeCar(x, y) {
                 if (generatedLevel) {
-                    generatedLevel.cars = generatedLevel.cars.filter(car => car[0] !== x || car[1] !== y);
-                    if (generatedLevel.grid[y][x] === 'car') {
-                        generatedLevel.grid[y][x] = 'empty';
+                    generatedLevel.cars = generatedLevel.cars.filter(car => car.x !== x || car.y !== y);
+                    if (generatedLevel.grid[y][x] && generatedLevel.grid[y][x].type === 'car') {
+                        generatedLevel.grid[y][x] = {type: 'empty'};
                     }
                     displayLevel(generatedLevel);
                     updateStats();
@@ -840,7 +1005,7 @@
             function setStart(x, y) {
                 if (generatedLevel) {
                     // Don't allow setting start on a car or end position
-                    if (!generatedLevel.cars.some(car => car[0] === x && car[1] === y) &&
+                    if (!generatedLevel.cars.some(car => car.x === x && car.y === y) &&
                         (x !== generatedLevel.end[0] || y !== generatedLevel.end[1])) {
                         generatedLevel.start = [x, y];
                         displayLevel(generatedLevel);
@@ -852,7 +1017,7 @@
             function setEnd(x, y) {
                 if (generatedLevel) {
                     // Don't allow setting end on a car or start position
-                    if (!generatedLevel.cars.some(car => car[0] === x && car[1] === y) &&
+                    if (!generatedLevel.cars.some(car => car.x === x || car.y === y) &&
                         (x !== generatedLevel.start[0] || y !== generatedLevel.start[1])) {
                         generatedLevel.end = [x, y];
                         displayLevel(generatedLevel);
@@ -869,6 +1034,10 @@
                 const difficulty = parseInt(difficultyInput.value);
                 const seed = seedInput.value || generateRandomSeed();
                 const useDFS = document.getElementById('useDFS').checked;
+                
+                // Determine parking layout (rows or columns)
+                parkingLayout = width > height ? 'columns' : 'rows';
+                layoutStat.textContent = parkingLayout === 'rows' ? 'Rows' : 'Columns';
                 
                 seedInput.value = seed;
                 
@@ -970,6 +1139,10 @@
                             difficultyInput.value = level.difficulty || 5;
                             seedInput.value = level.seed || generateRandomSeed();
                             
+                            // Determine parking layout from the level data
+                            parkingLayout = level.parkingLayout || (level.width > level.height ? 'columns' : 'rows');
+                            layoutStat.textContent = parkingLayout === 'rows' ? 'Rows' : 'Columns';
+                            
                             updateSliderValues();
                             displayLevel(level);
                             updateStats();
@@ -1008,9 +1181,12 @@
             }
             
             function generateLevel(width, height, difficulty, seed, useDFS) {
-                // Ensure width and height are at least 5
-                width = Math.max(5, width);
-                height = Math.max(5, height);
+                // Ensure width and height are at least 5 and even numbers
+                width = Math.max(5, Math.floor(width / 2) * 2);
+                height = Math.max(5, Math.floor(height / 2) * 2);
+                
+                // Determine parking layout (rows or columns)
+                const layout = width > height ? 'columns' : 'rows';
                 
                 const level = {
                     width: width,
@@ -1020,7 +1196,9 @@
                     end: [Math.floor(Math.random() * width), Math.floor(Math.random() * height)],
                     cars: [],
                     seed: seed,
-                    grid: Array.from({ length: height }, () => Array(width).fill('empty'))
+                    parkingLayout: layout,
+                    grid: Array.from({ length: height }, () => 
+                        Array.from({ length: width }, () => ({ type: 'empty' })))
                 };
                 
                 // Make sure start and end are different
@@ -1037,26 +1215,38 @@
                     const numCars = Math.floor((difficulty / 10) * totalCells * 0.4); // Reduced factor for better playability
                     
                     for (let i = 0; i < numCars; i++) {
-                        let x, y;
+                        let x, y, direction;
                         let count = 0;
+                        
                         do {
                             count++;
                             if (count > 100) break;
+                            
                             x = Math.floor(Math.random() * width);
                             y = Math.floor(Math.random() * height);
+                            
+                            // Determine direction based on parking layout
+                            if (layout === 'rows') {
+                                // For row layout, cars in even rows face up, odd rows face down
+                                direction = y % 2 === 0 ? 'up' : 'down';
+                            } else {
+                                // For column layout, cars in even columns face left, odd columns face right
+                                direction = x % 2 === 0 ? 'left' : 'right';
+                            }
                         } while (
-                            level.cars.some(car => car[0] === x && car[1] === y) || 
+                            level.cars.some(car => car.x === x && car.y === y) || 
                             (x === level.start[0] && y === level.start[1]) || 
                             (x === level.end[0] && y === level.end[1]) ||
                             paths.every(path => isCellOnPath(x, y, level.start, path))
                         );
                         
                         if (count > 100) break;
-                        level.cars.push([x, y]);
-                        level.grid[y][x] = 'car';
+                        
+                        level.cars.push({x, y, direction});
+                        level.grid[y][x] = {type: 'car', direction};
                     }
                 } else {
-                    // Generate cars randomly
+                    // Generate cars randomly with proper directions
                     const totalCells = width * height;
                     const numCars = Math.floor((difficulty / 10) * totalCells * 0.4); // Reduced factor for better playability
                     
@@ -1064,11 +1254,19 @@
                         const x = Math.floor(Math.random() * width);
                         const y = Math.floor(Math.random() * height);
                         
+                        // Determine direction based on parking layout
+                        let direction;
+                        if (layout === 'rows') {
+                            direction = y % 2 === 0 ? 'up' : 'down';
+                        } else {
+                            direction = x % 2 === 0 ? 'left' : 'right';
+                        }
+                        
                         // Ensure cars don't overlap with start or end points
                         if ((x !== level.start[0] || y !== level.start[1]) && 
                             (x !== level.end[0] || y !== level.end[1])) {
-                            level.cars.push([x, y]);
-                            level.grid[y][x] = 'car';
+                            level.cars.push({x, y, direction});
+                            level.grid[y][x] = {type: 'car', direction};
                         }
                     }
                 }
@@ -1130,38 +1328,66 @@
             
             function displayLevel(level) {
                 gridContainer.innerHTML = '';
-                gridContainer.style.setProperty('--cols', level.width);
+                gridContainer.style.setProperty('--cols', 1);
                 
-                // Create rows and cells
-                for (let y = 0; y < level.height; y++) {
-                    const row = document.createElement('div');
-                    row.className = 'grid-row';
-                    
-                    for (let x = 0; x < level.width; x++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'cell';
+                // Create parking lanes based on layout
+                if (level.parkingLayout === 'rows') {
+                    // For row layout, create horizontal lanes (groups of 2 rows)
+                    for (let y = 0; y < level.height; y += 2) {
+                        const lane = document.createElement('div');
+                        lane.className = 'parking-lane horizontal grid';
+                        lane.style.setProperty('--cols', level.width);
+                        lane.style.setProperty('gap', "4px");
                         
-                        if (x === level.start[0] && y === level.start[1]) {
-                            cell.classList.add('start');
-                            cell.title = `Start (${x}, ${y})`;
-                        } else if (x === level.end[0] && y === level.end[1]) {
-                            cell.classList.add('end');
-                            cell.title = `End (${x}, ${y})`;
-                        } else if (level.cars.some(car => car[0] === x && car[1] === y)) {
-                            cell.classList.add('car');
-                            cell.title = `Car (${x}, ${y})`;
-                        } else {
-                            cell.title = `Empty (${x}, ${y})`;
+                        for (let x = 0; x < level.width; x++) {
+                            for (let laneY = y; laneY < y + 2 && laneY < level.height; laneY++) {
+                                const cell = createCell(x, laneY, level);
+                                lane.appendChild(cell);
+                            }
                         }
                         
-                        row.appendChild(cell);
+                        gridContainer.appendChild(lane);
                     }
-                    
-                    gridContainer.appendChild(row);
+                } else {
+                    // For column layout, create vertical lanes (groups of 2 columns)
+                    for (let x = 0; x < level.width; x += 2) {
+                        const lane = document.createElement('div');
+                        lane.className = 'parking-lane vertical';
+                        
+                        for (let y = 0; y < level.height; y++) {
+                            for (let laneX = x; laneX < x + 2 && laneX < level.width; laneX++) {
+                                const cell = createCell(laneX, y, level);
+                                lane.appendChild(cell);
+                            }
+                        }
+                        
+                        gridContainer.appendChild(lane);
+                    }
                 }
                 
                 // Update JSON display
                 jsonContent.textContent = JSON.stringify(level, null, 2);
+            }
+            
+            function createCell(x, y, level) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                
+                if (x === level.start[0] && y === level.start[1]) {
+                    cell.classList.add('start');
+                    cell.title = `Start (${x}, ${y})`;
+                } else if (x === level.end[0] && y === level.end[1]) {
+                    cell.classList.add('end');
+                    cell.title = `End (${x}, ${y})`;
+                } else if (level.grid[y][x].type === 'car') {
+                    cell.classList.add('car');
+                    cell.classList.add(level.grid[y][x].direction);
+                    cell.title = `Car (${x}, ${y}) facing ${level.grid[y][x].direction}`;
+                } else {
+                    cell.title = `Empty (${x}, ${y})`;
+                }
+                
+                return cell;
             }
             
             function updateStats() {
@@ -1171,6 +1397,7 @@
                     difficultyStat.textContent = generatedLevel.difficulty;
                     startPosStat.textContent = `(${generatedLevel.start[0]}, ${generatedLevel.start[1]})`;
                     endPosStat.textContent = `(${generatedLevel.end[0]}, ${generatedLevel.end[1]})`;
+                    layoutStat.textContent = generatedLevel.parkingLayout === 'rows' ? 'Rows' : 'Columns';
                 }
             }
             
@@ -1182,18 +1409,36 @@
                     difficulty: 5,
                     start: [0, 0],
                     end: [9, 9],
-                    cars: [[2, 2], [3, 5], [7, 3], [5, 7], [8, 1]],
+                    cars: [
+                        {x: 2, y: 2, direction: 'up'},
+                        {x: 3, y: 5, direction: 'down'},
+                        {x: 7, y: 3, direction: 'up'},
+                        {x: 5, y: 7, direction: 'down'},
+                        {x: 8, y: 1, direction: 'up'}
+                    ],
                     seed: 'default',
+                    parkingLayout: 'rows',
                     grid: Array.from({ length: 10 }, (_, y) => 
                         Array.from({ length: 10 }, (_, x) => {
-                            if (x === 0 && y === 0) return 'start';
-                            if (x === 9 && y === 9) return 'end';
-                            if ([[2, 2], [3, 5], [7, 3], [5, 7], [8, 1]].some(pos => pos[0] === x && pos[1] === y)) return 'car';
-                            return 'empty';
-                        }))
+                            if (x === 0 && y === 0) return {type: 'start'};
+                            if (x === 9 && y === 9) return {type: 'end'};
+                            
+                            const car = [
+                                {x: 2, y: 2, direction: 'up'},
+                                {x: 3, y: 5, direction: 'down'},
+                                {x: 7, y: 3, direction: 'up'},
+                                {x: 5, y: 7, direction: 'down'},
+                                {x: 8, y: 1, direction: 'up'}
+                            ].find(c => c.x === x && c.y === y);
+                            
+                            if (car) return {type: 'car', direction: car.direction};
+                            return {type: 'empty'};
+                        })
+                    )
                 };
                 
                 generatedLevel = defaultLevel;
+                parkingLayout = defaultLevel.parkingLayout;
                 displayLevel(defaultLevel);
                 updateStats();
             }
@@ -1201,6 +1446,7 @@
             // Initialize the app with a default level
             initDefaultLevel();
             updateSliderValues();
+            updateDirectionButtons();
         });
     </script>
 </body>
