@@ -1,0 +1,397 @@
+/* ==========================================================================
+   Parking Lot Level Generator — stylesheet
+   Theming is driven by CSS variables, switched via [data-theme] on <html>.
+   ========================================================================== */
+
+:root {
+    --bg-color: #eef1f5;
+    --text-color: #1f2937;
+    --muted-color: #6b7280;
+    --container-bg: #ffffff;
+    --shadow-color: rgba(15, 23, 42, 0.08);
+    --primary-color: #2563eb;
+    --success-color: #16a34a;
+    --danger-color: #dc2626;
+    --warning-color: #d97706;
+    --info-color: #0891b2;
+    --border-color: #d1d5db;
+    --parking-spot-color: #f8fafc;
+    --lane-alt-color: #e8edf3;
+    --road-color: #cbd5e1;
+    --sidebar-bg: #f8fafc;
+    --json-bg: #0f172a;
+    --json-text: #e2e8f0;
+    --start-color: #16a34a;
+    --end-color: #dc2626;
+    --car-color: #2563eb;
+    --overlay: rgba(15, 23, 42, 0.55);
+    --cell-size: 30px;
+    --cell-gap: 4px;
+}
+
+[data-theme="dark"] {
+    --bg-color: #0f172a;
+    --text-color: #e2e8f0;
+    --muted-color: #94a3b8;
+    --container-bg: #1e293b;
+    --shadow-color: rgba(0, 0, 0, 0.45);
+    --primary-color: #3b82f6;
+    --success-color: #22c55e;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #06b6d4;
+    --border-color: #334155;
+    --parking-spot-color: #273449;
+    --lane-alt-color: #223047;
+    --road-color: #334155;
+    --sidebar-bg: #182338;
+    --json-bg: #020617;
+    --json-text: #cbd5e1;
+    --start-color: #22c55e;
+    --end-color: #ef4444;
+    --car-color: #3b82f6;
+    --overlay: rgba(2, 6, 23, 0.7);
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.25s ease, color 0.25s ease;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.main-container {
+    background-color: var(--container-bg);
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.75rem 2rem var(--shadow-color);
+    transition: background-color 0.25s ease;
+}
+
+h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+    letter-spacing: -0.02em;
+}
+
+.text-muted { color: var(--muted-color) !important; }
+
+/* ------------------------------- Forms -------------------------------- */
+
+.form-section {
+    background-color: var(--container-bg);
+    padding: 1.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.625rem;
+    margin-bottom: 1.25rem;
+}
+
+.form-label { font-weight: 600; font-size: 0.9rem; }
+
+.slider-container { margin-bottom: 0.5rem; }
+
+.slider-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.35rem;
+}
+
+.slider-value {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-variant-numeric: tabular-nums;
+}
+
+.form-range::-webkit-slider-thumb { background: var(--primary-color); }
+.form-range::-moz-range-thumb { background: var(--primary-color); }
+.form-range::-webkit-slider-runnable-track { background: var(--road-color); }
+.form-range::-moz-range-track { background: var(--road-color); }
+
+#levelForm.loading { opacity: 0.6; pointer-events: none; }
+
+.min-w-0 { min-width: 0; }
+
+/* ------------------------------- Grid --------------------------------- */
+
+.grid-container {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+
+.grid-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.grid-toolbar .zoom-label {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    min-width: 3.2rem;
+    text-align: center;
+    color: var(--muted-color);
+}
+
+.grid-wrapper {
+    flex: 1;
+    min-width: 0;
+    overflow: auto;
+    background: var(--road-color);
+    padding: 0.75rem;
+    border-radius: 0.625rem;
+    max-height: 70vh;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), var(--cell-size));
+    grid-template-rows: repeat(var(--rows), var(--cell-size));
+    gap: var(--cell-gap);
+    margin: 0 auto;
+    width: max-content;
+    touch-action: none; /* allow drag-painting on touch devices */
+}
+
+.cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border: 1px solid var(--border-color);
+    background-color: var(--parking-spot-color);
+    border-radius: 0.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: calc(var(--cell-size) * 0.5);
+    font-weight: 800;
+    color: #fff;
+    user-select: none;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.15s ease;
+}
+
+.cell.lane-alt { background-color: var(--lane-alt-color); }
+
+.cell:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 2px var(--primary-color);
+    z-index: 2;
+}
+
+.grid.editing .cell { cursor: crosshair; }
+
+.cell.start { background-color: var(--start-color); }
+.cell.end   { background-color: var(--end-color); }
+.cell.car   { background-color: var(--car-color); }
+
+.cell.start::before { content: 'S'; }
+.cell.end::before   { content: 'E'; }
+
+/* Car direction arrow (CSS triangle), sized with the cell. */
+.car::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+.car.up::after {
+    border-width: 0 calc(var(--cell-size) * 0.26) calc(var(--cell-size) * 0.4) calc(var(--cell-size) * 0.26);
+    border-color: transparent transparent rgba(255, 255, 255, 0.95) transparent;
+    bottom: 18%;
+}
+
+.car.down::after {
+    border-width: calc(var(--cell-size) * 0.4) calc(var(--cell-size) * 0.26) 0 calc(var(--cell-size) * 0.26);
+    border-color: rgba(255, 255, 255, 0.95) transparent transparent transparent;
+    top: 18%;
+}
+
+.car.left::after {
+    border-width: calc(var(--cell-size) * 0.26) calc(var(--cell-size) * 0.4) calc(var(--cell-size) * 0.26) 0;
+    border-color: transparent rgba(255, 255, 255, 0.95) transparent transparent;
+    right: 18%;
+}
+
+.car.right::after {
+    border-width: calc(var(--cell-size) * 0.26) 0 calc(var(--cell-size) * 0.26) calc(var(--cell-size) * 0.4);
+    border-color: transparent transparent transparent rgba(255, 255, 255, 0.95);
+    left: 18%;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+}
+
+.cell.pulse { animation: pulse 0.35s ease; }
+
+/* ------------------------------ Sidebar ------------------------------- */
+
+.sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background-color: var(--sidebar-bg);
+    padding: 1rem;
+    border-radius: 0.625rem;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.sidebar .btn { width: 100%; }
+.sidebar hr { margin: 0.25rem 0; opacity: 0.25; }
+
+.btn.active {
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.35);
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+}
+
+.mode-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+    border: 1px solid var(--primary-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* ------------------------------- Stats -------------------------------- */
+
+.stats-container {
+    background-color: var(--container-bg);
+    padding: 1rem 1.25rem;
+    border-radius: 0.625rem;
+    border: 1px solid var(--border-color);
+    margin-top: 1.25rem;
+}
+
+.stat-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    margin-bottom: 0.5rem;
+}
+
+.stat-chip .label { color: var(--muted-color); font-size: 0.85rem; }
+.stat-chip .value { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.badge-ok  { color: #fff; background: var(--success-color); }
+.badge-bad { color: #fff; background: var(--danger-color); }
+
+/* -------------------------------- JSON -------------------------------- */
+
+.json-container {
+    background-color: var(--container-bg);
+    padding: 1.25rem;
+    border-radius: 0.625rem;
+    border: 1px solid var(--border-color);
+    margin-top: 1.25rem;
+}
+
+#jsonContent {
+    background: var(--json-bg);
+    color: var(--json-text);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    max-height: 320px;
+    overflow: auto;
+    font-size: 0.82rem;
+    margin-bottom: 0;
+}
+
+/* ---------------------------- Theme toggle ---------------------------- */
+
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* ----------------------------- Drop overlay --------------------------- */
+
+.drop-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    pointer-events: none;
+}
+
+.drop-overlay.show { display: flex; }
+
+.drop-overlay .drop-card {
+    background: var(--container-bg);
+    color: var(--text-color);
+    border: 3px dashed var(--primary-color);
+    border-radius: 1rem;
+    padding: 2.5rem 3.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* ------------------------------- Footer ------------------------------- */
+
+.app-footer {
+    text-align: center;
+    color: var(--muted-color);
+    font-size: 0.85rem;
+    margin-top: 1.5rem;
+}
+
+.app-footer a { color: var(--primary-color); text-decoration: none; }
+.app-footer a:hover { text-decoration: underline; }
+
+/* ----------------------------- Responsive ----------------------------- */
+
+@media (max-width: 992px) {
+    .grid-container { flex-direction: column-reverse; }
+    .sidebar {
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    .sidebar > .btn { flex: 1 1 30%; min-width: 130px; }
+    .sidebar .sidebar-heading, .sidebar hr, .sidebar .form-text { flex: 1 1 100%; }
+}
+
+@media (max-width: 576px) {
+    body { padding: 10px; }
+    .main-container { padding: 1rem; }
+    h1 { font-size: 1.5rem; }
+    .sidebar > .btn { flex: 1 1 100%; }
+}

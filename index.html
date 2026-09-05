@@ -1,359 +1,50 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en" data-bs-theme="light" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A deterministic, seed-based generator and editor for grid-based parking lot puzzle levels.">
     <title>Parking Lot Level Generator</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232563eb'/%3E%3Ctext x='50' y='72' font-size='70' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <style>
-        :root {
-            --bg-color: #f8f9fa;
-            --text-color: #212529;
-            --container-bg: #ffffff;
-            --shadow-color: rgba(0, 0, 0, 0.1);
-            --primary-color: #0d6efd;
-            --success-color: #198754;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --info-color: #0dcaf0;
-            --border-color: #ced4da;
-            --cell-bg: #ffffff;
-            --start-color: #198754;
-            --end-color: #dc3545;
-            --car-color: #0d6efd;
-            --road-color: #6c757d;
-            --parking-spot-color: #e9ecef;
-            --sidebar-bg: #f8f9fa;
-            --active-btn-bg: #e2e6ea;
-            --slider-thumb: #0d6efd;
-            --slider-track: #d3d3d3;
-            --json-bg: #f8f9fa;
-            --json-text: #495057;
-            --parking-lane-color: #dee2e6;
-        }
-
-        [data-theme="dark"] {
-            --bg-color: #212529;
-            --text-color: #f8f9fa;
-            --container-bg: #2c3034;
-            --shadow-color: rgba(0, 0, 0, 0.3);
-            --primary-color: #0d6efd;
-            --success-color: #198754;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --info-color: #0dcaf0;
-            --border-color: #495057;
-            --cell-bg: #343a40;
-            --start-color: #198754;
-            --end-color: #dc3545;
-            --car-color: #0d6efd;
-            --road-color: #495057;
-            --parking-spot-color: #343a40;
-            --sidebar-bg: #343a40;
-            --active-btn-bg: #495057;
-            --slider-thumb: #0d6efd;
-            --slider-track: #495057;
-            --json-bg: #343a40;
-            --json-text: #e9ecef;
-            --parking-lane-color: #3a4046;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.3s, color 0.3s;
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-        }
-
-        .main-container {
-            background-color: var(--container-bg);
-            padding: 2rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.5rem 1rem var(--shadow-color);
-            transition: background-color 0.3s, box-shadow 0.3s;
-        }
-
-        h1 {
-            font-size: 2.2rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            color: var(--primary-color);
-        }
-
-        .form-section {
-            background-color: var(--container-bg);
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem var(--shadow-color);
-            margin-bottom: 1.5rem;
-        }
-
-        .slider-container {
-            margin-bottom: 1.5rem;
-        }
-
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-
-        .slider-value {
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
-        .form-range::-webkit-slider-thumb {
-            background: var(--primary-color);
-        }
-
-        .form-range::-moz-range-thumb {
-            background: var(--primary-color);
-        }
-
-        .form-range::-webkit-slider-runnable-track {
-            background: var(--slider-track);
-        }
-
-        .form-range::-moz-range-track {
-            background: var(--slider-track);
-        }
-
-        .grid-container {
-            display: flex;
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .grid-wrapper {
-            flex: 1;
-            overflow: auto;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(var(--cols), 30px);
-            grid-template-rows: repeat(var(--rows), 30px);
-            gap: 0.25rem;
-            margin: 0 auto;
-        }
-
-        .parking-lane {
-            background-color: var(--road-color);
-            display: grid;
-            padding: 0.5rem;
-            border-radius: 0.25rem;
-            gap: 0.25rem;
-        }
-
-        .parking-lane.horizontal {
-            grid-template-columns: repeat(var(--cols), 30px);
-            grid-auto-rows: 30px;
-        }
-
-        .parking-lane.vertical {
-            grid-template-rows: repeat(var(--rows), 30px);
-            grid-auto-columns: 30px;
-        }
-
-        .cell {
-            width: 30px;
-            height: 30px;
-            border: 1px solid var(--border-color);
-            background-color: var(--parking-spot-color);
-            border-radius: 0.25rem;
-            transition: all 0.2s;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .cell:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 0.25rem rgba(0, 0, 0, 0.2);
-        }
-
-        .start {
-            background-color: var(--start-color);
-            color: white;
-        }
-
-        .end {
-            background-color: var(--end-color);
-            color: white;
-        }
-
-        .car {
-            background-color: var(--car-color);
-            color: white;
-        }
-
-        .car::after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 0;
-            border-style: solid;
-        }
-
-        .car.up::after {
-            border-width: 0 8px 12px 8px;
-            border-color: transparent transparent white transparent;
-            bottom: 5px;
-        }
-
-        .car.down::after {
-            border-width: 12px 8px 0 8px;
-            border-color: white transparent transparent transparent;
-            top: 5px;
-        }
-
-        .car.left::after {
-            border-width: 8px 12px 8px 0;
-            border-color: transparent white transparent transparent;
-            right: 5px;
-        }
-
-        .car.right::after {
-            border-width: 8px 0 8px 12px;
-            border-color: transparent transparent transparent white;
-            left: 5px;
-        }
-
-        .sidebar {
-            width: 250px;
-            background-color: var(--sidebar-bg);
-            padding: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem var(--shadow-color);
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .sidebar .btn {
-            width: 100%;
-        }
-
-        .stats-container {
-            background-color: var(--container-bg);
-            padding: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem var(--shadow-color);
-            margin-top: 1.5rem;
-        }
-
-        .json-container {
-            background-color: var(--container-bg);
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem var(--shadow-color);
-            margin-top: 1.5rem;
-        }
-
-        .theme-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        @media (max-width: 992px) {
-            .grid-container {
-                flex-direction: column;
-            }
-
-            .sidebar {
-                width: 100%;
-                flex-direction: row;
-                flex-wrap: wrap;
-            }
-
-            .sidebar>* {
-                flex: 1 1 45%;
-                min-width: 120px;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .main-container {
-                padding: 1rem;
-            }
-
-            .sidebar>* {
-                flex: 1 1 100%;
-            }
-
-            .grid {
-                grid-template-columns: repeat(var(--cols), 25px);
-                grid-template-rows: repeat(var(--rows), 25px);
-            }
-
-            .cell {
-                width: 25px;
-                height: 25px;
-            }
-        }
-
-        /* Animation for grid cells */
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.1);
-            }
-
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        .cell.pulse {
-            animation: pulse 0.5s ease;
-        }
-
-        .btn.active {
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-        }
-    </style>
+    <!-- App styles -->
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
-<body class="bg-light">
-    <button class="theme-toggle btn btn-primary rounded-circle shadow" id="themeToggle" title="Toggle dark mode">
+<body>
+    <button class="theme-toggle btn btn-primary rounded-circle shadow" id="themeToggle" title="Toggle dark mode"
+        aria-label="Toggle dark mode">
         <i class="fas fa-moon"></i>
     </button>
 
     <div class="container py-4">
         <div class="main-container shadow">
-            <h1 class="text-center mb-4"><i class="fas fa-parking me-2"></i>Parking Lot Level Generator</h1>
+            <h1 class="text-center mb-1"><i class="fas fa-square-parking me-2"></i>Parking Lot Level Generator</h1>
+            <p class="text-center text-muted mb-4">
+                Generate deterministic, seed-based parking-puzzle levels — or build your own by hand.
+                Drag &amp; drop a <code>.json</code> level file anywhere to load it.
+            </p>
 
+            <!-- ------------------------- Controls ------------------------- -->
             <div class="form-section">
                 <form id="levelForm">
-                    <div class="row g-3">
+                    <div class="row g-3 align-items-end">
                         <!-- File Input -->
                         <div class="col-md-6">
-                            <label for="fileInput" class="form-label">Load Level:</label>
+                            <label for="fileInput" class="form-label"><i class="fas fa-folder-open me-1"></i>Load
+                                level (.json)</label>
                             <div class="input-group">
-                                <input type="file" class="form-control" id="fileInput" accept=".json">
-                                <button class="btn btn-outline-secondary" type="button" id="clearFileBtn">
+                                <input type="file" class="form-control" id="fileInput" accept=".json,application/json">
+                                <button class="btn btn-outline-secondary" type="button" id="clearFileBtn"
+                                    title="Clear file selection" aria-label="Clear file selection">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -361,83 +52,80 @@
 
                         <!-- Seed Input -->
                         <div class="col-md-6">
-                            <label for="seed" class="form-label">Seed Value:</label>
+                            <label for="seed" class="form-label"><i class="fas fa-dice me-1"></i>Seed</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" id="seed" name="seed">
+                                <input type="text" class="form-control" id="seed" name="seed"
+                                    placeholder="Any text — same seed, same level" autocomplete="off">
                                 <button class="btn btn-warning" type="button" id="randomSeedBtn"
-                                    title="Generate random seed">
-                                    <i class="fas fa-random"></i>
+                                    title="Generate a random seed">
+                                    <i class="fas fa-shuffle"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Sliders -->
+                        <!-- Width -->
                         <div class="col-md-4">
                             <div class="slider-container">
                                 <div class="slider-label">
-                                    <label for="width" class="form-label">Grid Width:</label>
+                                    <label for="width" class="form-label mb-0">Grid width</label>
                                     <span class="slider-value" id="widthValue">10</span>
                                 </div>
-                                <input type="range" class="form-range" step="1" id="width" name="width" min="4" max="30"
-                                    value="10">
-                                <div class="d-flex justify-content-between">
-                                    <small>4</small>
-                                    <small>30</small>
-                                </div>
+                                <input type="range" class="form-range" id="width" name="width" min="4" max="30"
+                                    step="1" value="10">
+                                <div class="d-flex justify-content-between"><small>4</small><small>30</small></div>
                             </div>
                         </div>
 
+                        <!-- Height -->
                         <div class="col-md-4">
                             <div class="slider-container">
                                 <div class="slider-label">
-                                    <label for="height" class="form-label">Grid Height:</label>
+                                    <label for="height" class="form-label mb-0">Grid height</label>
                                     <span class="slider-value" id="heightValue">10</span>
                                 </div>
                                 <input type="range" class="form-range" id="height" name="height" min="4" max="30"
                                     step="1" value="10">
-                                <div class="d-flex justify-content-between">
-                                    <small>4</small>
-                                    <small>30</small>
-                                </div>
+                                <div class="d-flex justify-content-between"><small>4</small><small>30</small></div>
                             </div>
                         </div>
 
+                        <!-- Difficulty -->
                         <div class="col-md-4">
                             <div class="slider-container">
                                 <div class="slider-label">
-                                    <label for="difficulty" class="form-label">Difficulty:</label>
+                                    <label for="difficulty" class="form-label mb-0">Difficulty</label>
                                     <span class="slider-value" id="difficultyValue">5</span>
                                 </div>
                                 <input type="range" class="form-range" id="difficulty" name="difficulty" min="1"
-                                    step="1" max="10" value="5">
-                                <div class="d-flex justify-content-between">
-                                    <small>1</small>
-                                    <small>10</small>
-                                </div>
+                                    max="10" step="1" value="5">
+                                <div class="d-flex justify-content-between"><small>1</small><small>10</small></div>
                             </div>
                         </div>
 
-                        <!-- Checkbox and Buttons -->
-                        <div class="col-md-3">
-                            <div class="form-check form-switch mt-2">
-                                <input class="form-check-input" type="checkbox" id="useDFS" name="useDFS">
-                                <label class="form-check-label" for="useDFS">Use Pathfinding</label>
+                        <!-- Options + actions -->
+                        <div class="col-lg-3 col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="useDFS" name="useDFS" checked>
+                                <label class="form-check-label" for="useDFS"
+                                    title="Cars are placed so that a start→exit path always exists (verified with breadth-first search).">
+                                    Guarantee solvable path
+                                </label>
                             </div>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-lg-3 col-md-6">
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-cogs me-2"></i>Generate
+                                <i class="fas fa-wand-magic-sparkles me-2"></i>Generate
                             </button>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-lg-3 col-md-6">
                             <button type="button" class="btn btn-success w-100" id="exportBtn" disabled>
-                                <i class="fas fa-download me-2"></i>Export
+                                <i class="fas fa-download me-2"></i>Export JSON
                             </button>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-lg-3 col-md-6">
                             <button type="button" class="btn btn-secondary w-100" id="copyJsonBtn" disabled>
                                 <i class="fas fa-copy me-2"></i>Copy JSON
                             </button>
@@ -446,892 +134,141 @@
                 </form>
             </div>
 
-            <div id="loading-bar" class="progress mb-3" style="display: none; height: 6px;">
-                <div id="loading-bar-inner" class="progress-bar progress-bar-striped progress-bar-animated"
-                    role="progressbar" style="width: 0%;"></div>
+            <!-- ---------------------- Edit mode banner ---------------------- -->
+            <div id="modeBanner" class="mode-banner d-none">
+                <span><i class="fas fa-pen-to-square me-2"></i><span id="modeBannerText"></span></span>
+                <button class="btn btn-sm btn-outline-danger" id="cancelModeBtn" type="button">
+                    <i class="fas fa-xmark me-1"></i>Cancel (Esc)
+                </button>
             </div>
 
+            <!-- --------------------------- Grid ----------------------------- -->
             <div class="grid-container">
-                <div class="grid-wrapper">
-                    <div id="gridContainer" class="grid shadow-sm"></div>
+                <div class="grid-wrapper-area flex-grow-1 min-w-0">
+                    <div class="grid-toolbar">
+                        <button class="btn btn-sm btn-outline-secondary" id="zoomOut" type="button"
+                            title="Zoom out" aria-label="Zoom out"><i class="fas fa-minus"></i></button>
+                        <span class="zoom-label" id="zoomValue">100%</span>
+                        <button class="btn btn-sm btn-outline-secondary" id="zoomIn" type="button"
+                            title="Zoom in" aria-label="Zoom in"><i class="fas fa-plus"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" id="zoomFit" type="button"
+                            title="Fit grid to viewport"><i class="fas fa-expand me-1"></i>Fit</button>
+                        <span class="text-muted small ms-auto">
+                            <i class="fas fa-circle-info me-1"></i>Tip: drag across cells to paint cars. Press
+                            <kbd>Esc</kbd> to cancel a tool.
+                        </span>
+                    </div>
+                    <div class="grid-wrapper" id="gridWrapper">
+                        <div id="gridContainer" class="grid" role="grid" aria-label="Parking lot grid"></div>
+                    </div>
                 </div>
 
+                <!-- ------------------------- Tools -------------------------- -->
                 <div id="sidebar" class="sidebar shadow-sm">
-                    <button id="addCarBtn" class="btn btn-primary">
-                        <i class="fas fa-car me-2"></i>Add Car
+                    <div class="sidebar-heading fw-bold text-muted text-uppercase small">Edit tools</div>
+                    <button id="addCarBtn" class="btn btn-primary" type="button"
+                        title="Click (or drag) empty cells to add cars">
+                        <i class="fas fa-car me-2"></i>Add car
                     </button>
-                    <button id="removeCarBtn" class="btn btn-danger">
-                        <i class="fas fa-trash me-2"></i>Remove Car
+                    <button id="removeCarBtn" class="btn btn-danger" type="button"
+                        title="Click (or drag across) cars to remove them">
+                        <i class="fas fa-trash-can me-2"></i>Remove car
                     </button>
-                    <button id="setStartBtn" class="btn btn-success">
-                        <i class="fas fa-flag me-2"></i>Set Start
+                    <button id="rotateCarBtn" class="btn btn-info text-white" type="button"
+                        title="Click a car to rotate it 90° clockwise">
+                        <i class="fas fa-rotate-right me-2"></i>Rotate car
                     </button>
-                    <button id="setEndBtn" class="btn btn-success">
-                        <i class="fas fa-flag-checkered me-2"></i>Set End
+                    <button id="setStartBtn" class="btn btn-success" type="button" title="Click a cell to place the start">
+                        <i class="fas fa-flag me-2"></i>Set start
                     </button>
-                    <button id="rotateCarBtn" class="btn btn-info">
-                        <i class="fas fa-sync-alt me-2"></i>Rotate Car
+                    <button id="setEndBtn" class="btn btn-success" type="button" title="Click a cell to place the exit">
+                        <i class="fas fa-flag-checkered me-2"></i>Set exit
                     </button>
-                    <button id="clearAllBtn" class="btn btn-warning">
-                        <i class="fas fa-broom me-2"></i>Clear All
+                    <hr>
+                    <button id="validateBtn" class="btn btn-outline-primary" type="button"
+                        title="Check whether a path from start to exit exists">
+                        <i class="fas fa-route me-2"></i>Check solvable
+                    </button>
+                    <button id="clearAllBtn" class="btn btn-warning" type="button"
+                        title="Remove all cars and reset start/exit">
+                        <i class="fas fa-broom me-2"></i>Clear all
                     </button>
                 </div>
             </div>
 
+            <!-- --------------------------- Stats ---------------------------- -->
             <div class="stats-container">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="row">
-                            <div class="col-6">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="">Grid Size:</span>
-                                    <span class="fw-bold" id="gridSizeStat">10×10</span>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="">Cars:</span>
-                                    <span class="fw-bold" id="carCountStat">0</span>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="">Difficulty:</span>
-                                    <span class="fw-bold" id="difficultyStat">5</span>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="">Layout:</span>
-                                    <span class="fw-bold" id="layoutStat">Rows</span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="row g-2">
+                    <div class="col-lg-2 col-md-4 col-6">
+                        <div class="stat-chip"><span class="label">Grid size</span><span class="value"
+                                id="gridSizeStat">10×10</span></div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="row">
-                            <div class="col-6">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="">Start:</span>
-                                    <span class="fw-bold" id="startPosStat">(0,0)</span>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="">End:</span>
-                                    <span class="fw-bold" id="endPosStat">(9,9)</span>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-lg-2 col-md-4 col-6">
+                        <div class="stat-chip"><span class="label">Cars</span><span class="value"
+                                id="carCountStat">0</span></div>
                     </div>
+                    <div class="col-lg-2 col-md-4 col-6">
+                        <div class="stat-chip"><span class="label">Difficulty</span><span class="value"
+                                id="difficultyStat">5</span></div>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-6">
+                        <div class="stat-chip"><span class="label">Fill</span><span class="value"
+                                id="fillStat">0%</span></div>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-6">
+                        <div class="stat-chip"><span class="label">Start / Exit</span><span class="value"><span
+                                    id="startPosStat">(0, 0)</span> → <span id="endPosStat">(9, 9)</span></span></div>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-6">
+                        <div class="stat-chip"><span class="label">Status</span><span id="solvableBadge"
+                                class="badge rounded-pill badge-ok"><span id="solvableStat">Solvable</span></span></div>
+                    </div>
+                </div>
+                <div class="small text-muted mt-2">
+                    Layout: <span id="layoutStat" class="fw-bold">Rows</span>
                 </div>
             </div>
 
-            <div id="jsonDisplay" class="json-container" style="display: none;">
-                <h3 class="mb-3"><i class="fas fa-code me-2"></i>Generated JSON</h3>
-                <pre id="jsonContent" class="p-3 bg-dark text-light rounded"
-                    style="max-height: 300px; overflow: auto;"></pre>
+            <!-- ---------------------------- JSON ---------------------------- -->
+            <div class="json-container">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <h3 class="mb-0"><i class="fas fa-code me-2"></i>Level JSON <span id="jsonCount"
+                            class="text-muted small fw-normal"></span></h3>
+                    <button class="btn btn-sm btn-outline-secondary" id="toggleJsonBtn" type="button">
+                        <i class="fas fa-code me-1"></i>Hide JSON
+                    </button>
+                </div>
+                <div id="jsonDisplay">
+                    <pre id="jsonContent"></pre>
+                </div>
             </div>
+
+            <footer class="app-footer">
+                Parking Lot Level Generator · 100% client-side ·
+                <a href="docs/USAGE.md" target="_blank" rel="noopener">Usage guide</a> ·
+                <a href="docs/LEVEL_FORMAT.md" target="_blank" rel="noopener">Level format</a> ·
+                <a href="docs/ARCHITECTURE.md" target="_blank" rel="noopener">Architecture</a>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Drag & drop overlay -->
+    <div id="dropOverlay" class="drop-overlay">
+        <div class="drop-card">
+            <i class="fas fa-file-arrow-down d-block mb-2"></i>
+            Drop a .json level file to load it
         </div>
     </div>
 
     <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- SeedRandom -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // DOM Elements
-            const form = document.getElementById('levelForm');
-            const gridContainer = document.getElementById('gridContainer');
-            const exportBtn = document.getElementById('exportBtn');
-            const copyJsonBtn = document.getElementById('copyJsonBtn');
-            const seedInput = document.getElementById('seed');
-            const randomSeedBtn = document.getElementById('randomSeedBtn');
-            const clearFileBtn = document.getElementById('clearFileBtn');
-            const fileInput = document.getElementById('fileInput');
-            const jsonDisplay = document.getElementById('jsonDisplay');
-            const jsonContent = document.getElementById('jsonContent');
-            const widthInput = document.getElementById('width');
-            const heightInput = document.getElementById('height');
-            const difficultyInput = document.getElementById('difficulty');
-            const themeToggle = document.getElementById('themeToggle');
-
-            // Slider value displays
-            const widthValue = document.getElementById('widthValue');
-            const heightValue = document.getElementById('heightValue');
-            const difficultyValue = document.getElementById('difficultyValue');
-
-            // Sidebar buttons
-            const addCarBtn = document.getElementById('addCarBtn');
-            const removeCarBtn = document.getElementById('removeCarBtn');
-            const setStartBtn = document.getElementById('setStartBtn');
-            const setEndBtn = document.getElementById('setEndBtn');
-            const rotateCarBtn = document.getElementById('rotateCarBtn');
-            const clearAllBtn = document.getElementById('clearAllBtn');
-
-            // Stats elements
-            const gridSizeStat = document.getElementById('gridSizeStat');
-            const carCountStat = document.getElementById('carCountStat');
-            const difficultyStat = document.getElementById('difficultyStat');
-            const startPosStat = document.getElementById('startPosStat');
-            const endPosStat = document.getElementById('endPosStat');
-            const layoutStat = document.getElementById('layoutStat');
-
-            // State variables
-            let cellEditingMode = null;
-            let generatedLevel = null;
-            let isDarkMode = false;
-            let parkingLayout = 'rows';
-
-            // Initialize theme
-            function initTheme() {
-                const savedTheme = localStorage.getItem('theme');
-                if (savedTheme === 'dark') {
-                    enableDarkMode();
-                } else {
-                    enableLightMode();
-                }
-            }
-
-            function enableDarkMode() {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-                isDarkMode = true;
-                localStorage.setItem('theme', 'dark');
-                document.body.classList.remove('bg-light');
-                document.body.classList.add('bg-dark');
-            }
-
-            function enableLightMode() {
-                document.documentElement.setAttribute('data-theme', 'light');
-                themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-                isDarkMode = false;
-                localStorage.setItem('theme', 'light');
-                document.body.classList.remove('bg-dark');
-                document.body.classList.add('bg-light');
-            }
-
-            themeToggle.addEventListener('click', function () {
-                if (isDarkMode) {
-                    enableLightMode();
-                } else {
-                    enableDarkMode();
-                }
-            });
-
-            // Initialize the app
-            initTheme();
-
-            // Update slider value displays
-            function updateSliderValues() {
-                widthValue.textContent = widthInput.value;
-                heightValue.textContent = heightInput.value;
-                difficultyValue.textContent = difficultyInput.value;
-            }
-
-            widthInput.addEventListener('input', updateSliderValues);
-            heightInput.addEventListener('input', updateSliderValues);
-            difficultyInput.addEventListener('input', updateSliderValues);
-
-            // Generate random seed
-            randomSeedBtn.addEventListener('click', function () {
-                seedInput.value = generateRandomSeed();
-            });
-
-            // Clear file input
-            clearFileBtn.addEventListener('click', function () {
-                fileInput.value = '';
-            });
-
-            // Sidebar button functionality
-            addCarBtn.addEventListener('click', function () {
-                if (cellEditingMode === 'addCar') {
-                    cellEditingMode = null;
-                } else {
-                    cellEditingMode = 'addCar';
-                }
-                updateSidebarButtons();
-            });
-
-            removeCarBtn.addEventListener('click', function () {
-                if (cellEditingMode === 'removeCar') {
-                    cellEditingMode = null;
-                } else {
-                    cellEditingMode = 'removeCar';
-                }
-                updateSidebarButtons();
-            });
-
-            setStartBtn.addEventListener('click', function () {
-                if (cellEditingMode === 'setStart') {
-                    cellEditingMode = null;
-                } else {
-                    cellEditingMode = 'setStart';
-                }
-                updateSidebarButtons();
-            });
-
-            setEndBtn.addEventListener('click', function () {
-                if (cellEditingMode === 'setEnd') {
-                    cellEditingMode = null;
-                } else {
-                    cellEditingMode = 'setEnd';
-                }
-                updateSidebarButtons();
-            });
-
-            rotateCarBtn.addEventListener('click', function () {
-                if (cellEditingMode === 'rotateCar') {
-                    cellEditingMode = null;
-                } else {
-                    cellEditingMode = 'rotateCar';
-                }
-                updateSidebarButtons();
-            });
-
-            clearAllBtn.addEventListener('click', function () {
-                if (generatedLevel) {
-                    Swal.fire({
-                        title: 'Clear the parking lot?',
-                        text: "This will remove all cars and reset start/end positions",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Yes, clear it!',
-                        theme: 'dark'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            generatedLevel.cars = [];
-                            generatedLevel.start = [0, 0];
-                            generatedLevel.end = [0, 0];
-                            displayLevel(generatedLevel);
-                            updateStats();
-                            Swal.fire({
-                                title: 'Cleared!',
-                                text: 'The parking lot has been reset.',
-                                icon: 'success',
-                                theme: 'dark'
-                            });
-
-                        }
-                    });
-                }
-            });
-
-            function updateSidebarButtons() {
-                // Reset all buttons
-                addCarBtn.classList.remove('active');
-                removeCarBtn.classList.remove('active');
-                setStartBtn.classList.remove('active');
-                setEndBtn.classList.remove('active');
-                rotateCarBtn.classList.remove('active');
-
-                // Activate the button corresponding to the current cell editing mode
-                switch (cellEditingMode) {
-                    case 'addCar':
-                        addCarBtn.classList.add('active');
-                        break;
-                    case 'removeCar':
-                        removeCarBtn.classList.add('active');
-                        break;
-                    case 'setStart':
-                        setStartBtn.classList.add('active');
-                        break;
-                    case 'setEnd':
-                        setEndBtn.classList.add('active');
-                        break;
-                    case 'rotateCar':
-                        rotateCarBtn.classList.add('active');
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            // Grid cell click handler
-            gridContainer.addEventListener('click', function (event) {
-                const cell = event.target;
-                if (cell.classList.contains('cell')) {
-                    // Get the row and column index from data attributes
-                    const x = parseInt(cell.dataset.x);
-                    const y = parseInt(cell.dataset.y);
-
-                    // Add pulse animation
-                    cell.classList.add('pulse');
-                    setTimeout(() => {
-                        cell.classList.remove('pulse');
-                    }, 500);
-
-                    switch (cellEditingMode) {
-                        case 'addCar':
-                            addCar(x, y);
-                            break;
-                        case 'removeCar':
-                            removeCar(x, y);
-                            break;
-                        case 'setStart':
-                            setStart(x, y);
-                            break;
-                        case 'setEnd':
-                            setEnd(x, y);
-                            break;
-                        case 'rotateCar':
-                            rotateCar(x, y);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            });
-
-            // Modify grid functions
-            function addCar(x, y) {
-                if (generatedLevel && generatedLevel.grid) {
-                    // Check if the cell is already a car or is start/end
-                    if (!generatedLevel.cars.some(car => car.x === x && car.y === y) &&
-                        (x !== generatedLevel.start[0] || y !== generatedLevel.start[1]) &&
-                        (x !== generatedLevel.end[0] || y !== generatedLevel.end[1])) {
-
-                        // Determine direction based on parking layout
-                        let direction;
-                        if (parkingLayout === 'rows') {
-                            // For row layout, cars in even rows face up, odd rows face down
-                            direction = y % 2 === 0 ? 'up' : 'down';
-                        } else {
-                            // For column layout, cars in even columns face left, odd columns face right
-                            direction = x % 2 === 0 ? 'left' : 'right';
-                        }
-
-                        generatedLevel.cars.push({ x, y, direction });
-                        generatedLevel.grid[y][x] = { type: 'car', direction };
-                        displayLevel(generatedLevel);
-                        updateStats();
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Cannot place car here',
-                            text: 'This spot is already occupied by a car or is a start/end position',
-                            theme: 'dark'
-                        });
-                    }
-                } else {
-                    console.error('Grid is not initialized!');
-                }
-            }
-
-            function removeCar(x, y) {
-                if (generatedLevel) {
-                    const carIndex = generatedLevel.cars.findIndex(car => car.x === x && car.y === y);
-                    if (carIndex !== -1) {
-                        generatedLevel.cars.splice(carIndex, 1);
-                        if (generatedLevel.grid[y][x] && generatedLevel.grid[y][x].type === 'car') {
-                            generatedLevel.grid[y][x] = { type: 'empty' };
-                        }
-                        displayLevel(generatedLevel);
-                        updateStats();
-                    }
-                }
-            }
-
-            function rotateCar(x, y) {
-                if (generatedLevel) {
-                    const carIndex = generatedLevel.cars.findIndex(car => car.x === x && car.y === y);
-                    if (carIndex !== -1) {
-                        const car = generatedLevel.cars[carIndex];
-                        // Cycle through directions: up -> right -> down -> left -> up
-                        const directions = ['up', 'right', 'down', 'left'];
-                        const currentIndex = directions.indexOf(car.direction);
-                        const nextIndex = (currentIndex + 1) % directions.length;
-                        car.direction = directions[nextIndex];
-                        generatedLevel.grid[y][x].direction = car.direction;
-                        displayLevel(generatedLevel);
-                        updateStats();
-                    }
-                }
-            }
-
-            function setStart(x, y) {
-                if (generatedLevel) {
-                    // Don't allow setting start on a car or end position
-                    if (!generatedLevel.cars.some(car => car.x === x && car.y === y) &&
-                        (x !== generatedLevel.end[0] || y !== generatedLevel.end[1])) {
-                        generatedLevel.start = [x, y];
-                        displayLevel(generatedLevel);
-                        updateStats();
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Cannot set start here',
-                            text: 'This spot is occupied by a car or is the end position',
-                            theme: 'dark'
-                        });
-                    }
-                }
-            }
-
-            function setEnd(x, y) {
-                if (generatedLevel) {
-                    // Don't allow setting end on a car or start position
-                    if (!generatedLevel.cars.some(car => car.x === x && car.y === y) &&
-                        (x !== generatedLevel.start[0] || y !== generatedLevel.start[1])) {
-                        generatedLevel.end = [x, y];
-                        displayLevel(generatedLevel);
-                        updateStats();
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Cannot set end here',
-                            text: 'This spot is occupied by a car or is the start position',
-                            theme: 'dark'
-                        });
-                    }
-                }
-            }
-
-            // Form submission handler
-            form.addEventListener('submit', async function (event) {
-                event.preventDefault();
-                const width = parseInt(widthInput.value);
-                const height = parseInt(heightInput.value);
-                const difficulty = parseInt(difficultyInput.value);
-                const seed = seedInput.value || generateRandomSeed();
-                const useDFS = document.getElementById('useDFS').checked;
-
-                // Determine parking layout (rows or columns)
-                parkingLayout = width > height ? 'columns' : 'rows';
-                layoutStat.textContent = parkingLayout === 'rows' ? 'Rows' : 'Columns';
-
-                seedInput.value = seed;
-
-                Math.seedrandom(seed); // Setting seed for deterministic random number generation
-
-                // Show loading progress bar
-                showLoadingProgressBar();
-
-                try {
-                    const level = await generateLevelAsync(width, height, difficulty, seed, useDFS);
-                    generatedLevel = level;
-                    displayLevel(level);
-                    updateStats();
-                    exportBtn.disabled = false;
-                    copyJsonBtn.disabled = false;
-                    jsonDisplay.style.display = 'block';
-                    jsonContent.textContent = JSON.stringify(level, null, 2);
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Level generated successfully!',
-                        showConfirmButton: false,
-                        timer: 1500,
-                        theme: 'dark'
-                    });
-                } catch (error) {
-                    console.error('Error generating level:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Generation failed',
-                        text: 'An error occurred while generating the level.',
-                        theme: 'dark'
-                    });
-                } finally {
-                    // Hide loading progress bar
-                    hideLoadingProgressBar();
-                }
-            });
-
-            // Loading progress bar functions
-            function showLoadingProgressBar() {
-                const loadingBar = document.getElementById('loading-bar');
-                const loadingBarInner = document.getElementById('loading-bar-inner');
-
-                loadingBar.style.display = 'block';
-                loadingBarInner.style.width = '0%';
-
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += 5;
-                    loadingBarInner.style.width = `${progress}%`;
-
-                    if (progress >= 100) {
-                        clearInterval(interval);
-                    }
-                }, 50);
-            }
-
-            function hideLoadingProgressBar() {
-                document.getElementById('loading-bar').style.display = 'none';
-            }
-
-            // Export button handler
-            exportBtn.addEventListener('click', function () {
-                if (generatedLevel) {
-                    const jsonData = JSON.stringify(generatedLevel, null, 2);
-                    const blob = new Blob([jsonData], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `parking-level-${generatedLevel.width}x${generatedLevel.height}-difficulty-${generatedLevel.difficulty}.json`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Level exported!',
-                        showConfirmButton: false,
-                        timer: 1500,
-                        theme: 'dark'
-                    });
-                }
-            });
-
-            // Copy JSON button handler
-            copyJsonBtn.addEventListener('click', function () {
-                if (generatedLevel) {
-                    const jsonData = JSON.stringify(generatedLevel, null, 2);
-                    navigator.clipboard.writeText(jsonData).then(() => {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Copied to clipboard!',
-                            showConfirmButton: false,
-                            timer: 1500,
-                            theme: 'dark'
-                        });
-                    }).catch(err => {
-                        console.error('Failed to copy JSON: ', err);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Copy failed',
-                            text: 'Failed to copy JSON to clipboard',
-                            theme: 'dark'
-                        });
-                    });
-                }
-            });
-
-            // File input handler
-            fileInput.addEventListener('change', function (event) {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-
-                reader.onload = function (e) {
-                    try {
-                        const contents = e.target.result;
-                        const level = JSON.parse(contents);
-
-                        if (level.width && level.height && level.grid) {
-                            generatedLevel = level;
-                            widthInput.value = level.width;
-                            heightInput.value = level.height;
-                            difficultyInput.value = level.difficulty || 5;
-                            seedInput.value = level.seed || generateRandomSeed();
-
-                            // Determine parking layout from the level data
-                            parkingLayout = level.parkingLayout || (level.width > level.height ? 'columns' : 'rows');
-                            layoutStat.textContent = parkingLayout === 'rows' ? 'Rows' : 'Columns';
-
-                            updateSliderValues();
-                            displayLevel(level);
-                            updateStats();
-                            exportBtn.disabled = false;
-                            copyJsonBtn.disabled = false;
-                            jsonDisplay.style.display = 'block';
-                            jsonContent.textContent = JSON.stringify(level, null, 2);
-
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Level loaded!',
-                                showConfirmButton: false,
-                                timer: 1500,
-                                theme: 'dark'
-                            });
-                        } else {
-                            throw new Error('Invalid level format');
-                        }
-                    } catch (error) {
-                        console.error('Error loading file:', error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Load failed',
-                            text: 'Please make sure it is a valid level JSON file.',
-                            theme: 'dark'
-                        });
-                    }
-                };
-
-                reader.onerror = function () {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error reading file',
-                        text: 'Please try another file.',
-                        theme: 'dark'
-                    });
-                };
-
-                reader.readAsText(file);
-            });
-
-            // Helper functions
-            function generateRandomSeed() {
-                return Math.random().toString(36).substr(2, 9); // Generate random alphanumeric string
-            }
-
-            async function generateLevelAsync(width, height, difficulty, seed, useDFS) {
-                return new Promise((resolve) => {
-                    setTimeout(() => { // Simulate asynchronous level generation
-                        const level = generateLevel(width, height, difficulty, seed, useDFS);
-                        resolve(level);
-                    }, 100);
-                });
-            }
-
-            function generateLevel(width, height, difficulty, seed, useDFS) {
-                // Ensure width and height are at least 4 and even numbers
-                width = Math.max(4, Math.floor(width / 2) * 2);
-                height = Math.max(4, Math.floor(height / 2) * 2);
-
-                // Determine parking layout (rows or columns)
-                const layout = width > height ? 'columns' : 'rows';
-
-                const level = {
-                    width: width,
-                    height: height,
-                    difficulty: difficulty,
-                    start: [Math.floor(Math.random() * width), Math.floor(Math.random() * height)],
-                    end: [Math.floor(Math.random() * width), Math.floor(Math.random() * height)],
-                    cars: [],
-                    seed: seed,
-                    parkingLayout: layout,
-                    grid: Array.from({ length: height }, () =>
-                        Array.from({ length: width }, () => ({ type: 'empty' })))
-                };
-
-                // Make sure start and end are different
-                while (level.start[0] === level.end[0] && level.start[1] === level.end[1]) {
-                    level.end = [Math.floor(Math.random() * width), Math.floor(Math.random() * height)];
-                }
-
-                if (useDFS) {
-                    // Use BFS to find the shortest path
-                    const path = findShortestPath(level, level.start, level.end);
-
-                    // Generate cars while avoiding the path
-                    const totalCells = width * height;
-                    const numCars = Math.floor((difficulty / 10) * totalCells * 0.4); // Reduced factor for better playability
-
-                    for (let i = 0; i < numCars; i++) {
-                        let x, y, direction;
-                        let count = 0;
-
-                        do {
-                            count++;
-                            if (count > 100) break;
-
-                            x = Math.floor(Math.random() * width);
-                            y = Math.floor(Math.random() * height);
-
-                            // Determine direction based on parking layout
-                            if (layout === 'rows') {
-                                direction = y % 2 === 0 ? 'up' : 'down';
-                            } else {
-                                direction = x % 2 === 0 ? 'left' : 'right';
-                            }
-                        } while (
-                            level.cars.some(car => car.x === x && car.y === y) ||
-                            (x === level.start[0] && y === level.start[1]) ||
-                            (x === level.end[0] && y === level.end[1]) ||
-                            isCellOnPath(x, y, path)
-                        );
-
-                        if (count > 100) break;
-
-                        level.cars.push({ x, y, direction });
-                        level.grid[y][x] = { type: 'car', direction };
-                    }
-                } else {
-                    // Generate cars randomly with proper directions
-                    const totalCells = width * height;
-                    const numCars = Math.floor((difficulty / 10) * totalCells * 0.4); // Reduced factor for better playability
-
-                    for (let i = 0; i < numCars; i++) {
-                        const x = Math.floor(Math.random() * width);
-                        const y = Math.floor(Math.random() * height);
-
-                        // Determine direction based on parking layout
-                        let direction;
-                        if (layout === 'rows') {
-                            direction = y % 2 === 0 ? 'up' : 'down';
-                        } else {
-                            direction = x % 2 === 0 ? 'left' : 'right';
-                        }
-
-                        // Ensure cars don't overlap with start or end points
-                        if ((x !== level.start[0] || y !== level.start[1]) &&
-                            (x !== level.end[0] || y !== level.end[1])) {
-                            level.cars.push({ x, y, direction });
-                            level.grid[y][x] = { type: 'car', direction };
-                        }
-                    }
-                }
-
-                return level;
-            }
-
-            function isCellOnPath(x, y, path) {
-                if (!path) return false;
-
-                for (const [px, py] of path) {
-                    if (px === x && py === y) return true;
-                }
-                return false;
-            }
-
-            function findShortestPath(level, start, end) {
-                const queue = [[start]];
-                const visited = new Set();
-                visited.add(`${start[0]},${start[1]}`);
-
-                const directions = [
-                    [1, 0],  // right
-                    [-1, 0],  // left
-                    [0, 1],   // down
-                    [0, -1]    // up
-                ];
-
-                while (queue.length > 0) {
-                    const path = queue.shift();
-                    const [x, y] = path[path.length - 1];
-
-                    // Check if we've reached the end
-                    if (x === end[0] && y === end[1]) {
-                        return path;
-                    }
-
-                    // Explore all four directions
-                    for (const [dx, dy] of directions) {
-                        const newX = x + dx;
-                        const newY = y + dy;
-                        const key = `${newX},${newY}`;
-
-                        // Check boundaries and if already visited
-                        if (newX >= 0 && newX < level.width &&
-                            newY >= 0 && newY < level.height &&
-                            !visited.has(key)) {
-
-                            // Check if the cell is not occupied by a car
-                            if (!level.cars.some(car => car.x === newX && car.y === newY)) {
-                                visited.add(key);
-                                queue.push([...path, [newX, newY]]);
-                            }
-                        }
-                    }
-                }
-
-                return null; // No path found
-            }
-
-            function displayLevel(level) {
-                gridContainer.innerHTML = '';
-                gridContainer.style.setProperty('--cols', level.width);
-                gridContainer.style.setProperty('--rows', level.height);
-
-                // Create grid cells in proper order
-                for (let y = 0; y < level.height; y++) {
-                    for (let x = 0; x < level.width; x++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'cell';
-                        cell.dataset.x = x;
-                        cell.dataset.y = y;
-
-                        if (x === level.start[0] && y === level.start[1]) {
-                            cell.classList.add('start');
-                            cell.title = `Start (${x}, ${y})`;
-                        } else if (x === level.end[0] && y === level.end[1]) {
-                            cell.classList.add('end');
-                            cell.title = `End (${x}, ${y})`;
-                        } else if (level.grid[y][x].type === 'car') {
-                            cell.classList.add('car');
-                            cell.classList.add(level.grid[y][x].direction);
-                            cell.title = `Car (${x}, ${y}) facing ${level.grid[y][x].direction}`;
-                        } else {
-                            cell.title = `Empty (${x}, ${y})`;
-                        }
-
-                        gridContainer.appendChild(cell);
-                    }
-                }
-
-                // Update JSON display
-                jsonContent.textContent = JSON.stringify(level, null, 2);
-            }
-
-            function updateStats() {
-                if (generatedLevel) {
-                    gridSizeStat.textContent = `${generatedLevel.width}×${generatedLevel.height}`;
-                    carCountStat.textContent = generatedLevel.cars.length;
-                    difficultyStat.textContent = generatedLevel.difficulty;
-                    startPosStat.textContent = `(${generatedLevel.start[0]},${generatedLevel.start[1]})`;
-                    endPosStat.textContent = `(${generatedLevel.end[0]},${generatedLevel.end[1]})`;
-                    layoutStat.textContent = generatedLevel.parkingLayout === 'rows' ? 'Rows' : 'Columns';
-                }
-            }
-
-            // Initialize with a default level
-            function initDefaultLevel() {
-                const defaultLevel = {
-                    width: 10,
-                    height: 10,
-                    difficulty: 5,
-                    start: [0, 0],
-                    end: [9, 9],
-                    cars: [
-                        { x: 2, y: 2, direction: 'up' },
-                        { x: 3, y: 5, direction: 'down' },
-                        { x: 7, y: 3, direction: 'up' },
-                        { x: 5, y: 7, direction: 'down' },
-                        { x: 8, y: 1, direction: 'up' }
-                    ],
-                    seed: 'default',
-                    parkingLayout: 'rows',
-                    grid: Array.from({ length: 10 }, (_, y) =>
-                        Array.from({ length: 10 }, (_, x) => {
-                            if (x === 0 && y === 0) return { type: 'start' };
-                            if (x === 9 && y === 9) return { type: 'end' };
-
-                            const car = [
-                                { x: 2, y: 2, direction: 'up' },
-                                { x: 3, y: 5, direction: 'down' },
-                                { x: 7, y: 3, direction: 'up' },
-                                { x: 5, y: 7, direction: 'down' },
-                                { x: 8, y: 1, direction: 'up' }
-                            ].find(c => c.x === x && c.y === y);
-
-                            if (car) return { type: 'car', direction: car.direction };
-                            return { type: 'empty' };
-                        })
-                    )
-                };
-
-                generatedLevel = defaultLevel;
-                parkingLayout = defaultLevel.parkingLayout;
-                displayLevel(defaultLevel);
-                updateStats();
-            }
-
-            // Initialize the app with a default level
-            initDefaultLevel();
-            updateSliderValues();
-        });
-    </script>
+    <!-- App modules (no build step required) -->
+    <script src="js/rng.js"></script>
+    <script src="js/pathfinding.js"></script>
+    <script src="js/level.js"></script>
+    <script src="js/app.js"></script>
 </body>
 
 </html>
