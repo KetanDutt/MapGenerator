@@ -1,13 +1,13 @@
 # Architecture
 
-The app is a small set of dependency-free vanilla-JS modules plus a Bootstrap/
-SweetAlert2 UI layer. There is **no build step**: each script attaches its
-public API to a shared `window.ParkingGen` namespace, and `index.html` loads
-them in dependency order.
+The app is a small set of dependency-free vanilla-JS modules plus a
+self-contained "Liquid Glass" CSS design system and a SweetAlert2 dialog layer.
+There is **no build step**: each script attaches its public API to a shared
+`window.ParkingGen` namespace, and `index.html` loads them in dependency order.
 
 ```
 index.html
-   │  loads (CDN): bootstrap, font-awesome, sweetalert2
+   │  loads (CDN): font-awesome, sweetalert2
    │  loads (local):
    ▼
 js/rng.js ──────────► ParkingGen.RNG         (seeded randomness)
@@ -107,10 +107,15 @@ renders the initial level. Key internal groups:
 
 ### `css/style.css`
 
-All colours/sizes are CSS variables on `:root`, overridden under
-`[data-theme="dark"]`. The grid uses `grid-template-columns: repeat(var(--cols),
-var(--cell-size))`; car arrows are pure CSS triangles sized off
-`var(--cell-size)`, so zoom never distorts them.
+The UI is a self-contained **Liquid Glass** design system (no CSS framework).
+A centralized token block on `:root` — and its override under
+`[data-theme="dark"]` — defines colour, the four glass-material strengths,
+blur levels, radii, shadows, spacing, motion (durations + easing) and z-index
+layers; every component is built from those tokens. The grid uses
+`grid-template-columns: repeat(var(--cols), var(--cell-size))`; car arrows are
+pure CSS triangles sized off `var(--cell-size)`, so zoom never distorts them.
+Motion is CSS-only (transform/opacity, GPU-friendly) and honours
+`prefers-reduced-motion`.
 
 ## Data flow
 

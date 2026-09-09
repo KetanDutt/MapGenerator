@@ -113,7 +113,7 @@ saved in `localStorage`; on first visit the app follows your OS
 ## Troubleshooting
 
 - **Buttons look unstyled / dialogs are plain browser popups** — a CDN
-  (Bootstrap/Font Awesome/SweetAlert2) couldn't load. The tool still works;
+  (Font Awesome/SweetAlert2) couldn't load. The tool still works;
   check your network/ad-blocker.
 - **"Level is blocked" when exporting** — the cars fully separate start from
   exit; remove or rotate a car to reopen a route, or export anyway if you

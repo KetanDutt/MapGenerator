@@ -71,9 +71,10 @@ confirmation first.
 
 ```
 MapGenerator/
-├── index.html            # Markup + CDN stylesheets/scripts (Bootstrap, FA, SweetAlert2)
+├── index.html            # Markup + CDN stylesheets/scripts (Font Awesome, SweetAlert2)
 ├── css/
-│   └── style.css         # Theme variables, grid, cars, sidebar, responsive rules
+│   └── style.css         # Liquid Glass design system: tokens, materials, components,
+│                         #   grid, sidebar, responsive rules, reduced-motion fallbacks
 ├── js/
 │   ├── rng.js            # Seeded PRNG (mulberry32 + xmur3 hash)
 │   ├── pathfinding.js    # Breadth-first search (shortest path / solvability)
@@ -113,9 +114,14 @@ non-zero on any failure, so it can be wired straight into CI.
 ## 🛠️ Tech notes
 
 - **No bundler / framework for app code** — vanilla JS in small, documented files.
-- Third-party UI libraries (Bootstrap 5, Font Awesome, SweetAlert2) load from
-  CDNs but are not required for the core logic; the app degrades gracefully if
-  they fail to load (native `alert`/`confirm`/`console` fallbacks).
+- **No CSS framework** — the UI is a self-contained "Liquid Glass" design system
+  (`css/style.css`): centralized design tokens (color, glass opacity, blur,
+  radii, shadows, spacing, motion), four glass material strengths, and
+  first-class light/dark themes. Motion is CSS-only (transform/opacity),
+  GPU-friendly, and honors `prefers-reduced-motion`.
+- Font Awesome (icons) and SweetAlert2 (toasts/dialogs) load from CDNs but are
+  not required for the core logic; the app degrades gracefully if they fail to
+  load (native `alert`/`confirm`/`console` fallbacks).
 - Deterministic randomness is self-contained in `js/rng.js` (no external
   seedrandom dependency).
 
