@@ -4,264 +4,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A deterministic, seed-based generator and editor for grid-based parking lot puzzle levels.">
+    <meta name="description"
+        content="A deterministic, seed-based generator and editor for grid-based parking lot puzzle levels.">
     <title>Parking Lot Level Generator</title>
     <link rel="icon"
-        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232563eb'/%3E%3Ctext x='50' y='72' font-size='70' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232e6bee'/%3E%3Ctext x='50' y='72' font-size='68' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
+    <!-- Font Awesome (icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <!-- SweetAlert2 -->
+    <!-- SweetAlert2 (toasts & dialogs) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <!-- App styles -->
+    <!-- App design system -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-    <button class="theme-toggle btn btn-primary rounded-circle shadow" id="themeToggle" title="Toggle dark mode"
-        aria-label="Toggle dark mode">
-        <i class="fas fa-moon"></i>
-    </button>
+    <!-- Ambient background field (Layer 0) -->
+    <div class="ambient" aria-hidden="true"></div>
 
-    <div class="container py-4">
-        <div class="main-container shadow">
-            <h1 class="text-center mb-1"><i class="fas fa-square-parking me-2"></i>Parking Lot Level Generator</h1>
-            <p class="text-center text-muted mb-4">
+    <!-- Floating glass navigation (Layer 3) -->
+    <header class="app-header" id="appHeader">
+        <div class="app-header__inner glass-1">
+            <div class="app-brand">
+                <span class="app-brand__mark" aria-hidden="true"><i class="fas fa-square-parking"></i></span>
+                <span class="app-brand__name">Parking Lot Level Generator</span>
+            </div>
+            <div class="app-header__actions">
+                <span class="app-badge">100% client-side</span>
+                <button class="icon-btn icon-btn--theme" id="themeToggle" type="button" title="Toggle dark mode"
+                    aria-label="Toggle dark mode">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-main">
+        <!-- Hero -->
+        <section class="hero reveal" aria-labelledby="pageTitle">
+            <h1 id="pageTitle" class="hero__title">Level Studio</h1>
+            <p class="hero__sub">
                 Generate deterministic, seed-based parking-puzzle levels — or build your own by hand.
                 Drag &amp; drop a <code>.json</code> level file anywhere to load it.
             </p>
+        </section>
 
-            <!-- ------------------------- Controls ------------------------- -->
-            <div class="form-section">
-                <form id="levelForm">
-                    <div class="row g-3 align-items-end">
-                        <!-- File Input -->
-                        <div class="col-md-6">
-                            <label for="fileInput" class="form-label"><i class="fas fa-folder-open me-1"></i>Load
-                                level (.json)</label>
-                            <div class="input-group">
-                                <input type="file" class="form-control" id="fileInput" accept=".json,application/json">
-                                <button class="btn btn-outline-secondary" type="button" id="clearFileBtn"
-                                    title="Clear file selection" aria-label="Clear file selection">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
+        <!-- ------------------------- Controls ------------------------- -->
+        <section class="panel glass-2 reveal" style="--d: 70ms" aria-labelledby="controlsTitle">
+            <div class="panel__head">
+                <h2 class="panel__title" id="controlsTitle">
+                    <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>New level
+                </h2>
+                <span class="panel__hint">Same seed, size and difficulty always rebuild the same level.</span>
+            </div>
 
-                        <!-- Seed Input -->
-                        <div class="col-md-6">
-                            <label for="seed" class="form-label"><i class="fas fa-dice me-1"></i>Seed</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="seed" name="seed"
-                                    placeholder="Any text — same seed, same level" autocomplete="off">
-                                <button class="btn btn-warning" type="button" id="randomSeedBtn"
-                                    title="Generate a random seed">
-                                    <i class="fas fa-shuffle"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Width -->
-                        <div class="col-md-4">
-                            <div class="slider-container">
-                                <div class="slider-label">
-                                    <label for="width" class="form-label mb-0">Grid width</label>
-                                    <span class="slider-value" id="widthValue">10</span>
-                                </div>
-                                <input type="range" class="form-range" id="width" name="width" min="4" max="30"
-                                    step="1" value="10">
-                                <div class="d-flex justify-content-between"><small>4</small><small>30</small></div>
-                            </div>
-                        </div>
-
-                        <!-- Height -->
-                        <div class="col-md-4">
-                            <div class="slider-container">
-                                <div class="slider-label">
-                                    <label for="height" class="form-label mb-0">Grid height</label>
-                                    <span class="slider-value" id="heightValue">10</span>
-                                </div>
-                                <input type="range" class="form-range" id="height" name="height" min="4" max="30"
-                                    step="1" value="10">
-                                <div class="d-flex justify-content-between"><small>4</small><small>30</small></div>
-                            </div>
-                        </div>
-
-                        <!-- Difficulty -->
-                        <div class="col-md-4">
-                            <div class="slider-container">
-                                <div class="slider-label">
-                                    <label for="difficulty" class="form-label mb-0">Difficulty</label>
-                                    <span class="slider-value" id="difficultyValue">5</span>
-                                </div>
-                                <input type="range" class="form-range" id="difficulty" name="difficulty" min="1"
-                                    max="10" step="1" value="5">
-                                <div class="d-flex justify-content-between"><small>1</small><small>10</small></div>
-                            </div>
-                        </div>
-
-                        <!-- Options + actions -->
-                        <div class="col-lg-3 col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="useDFS" name="useDFS" checked>
-                                <label class="form-check-label" for="useDFS"
-                                    title="Cars are placed so that a start→exit path always exists (verified with breadth-first search).">
-                                    Guarantee solvable path
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-3 col-md-6">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-wand-magic-sparkles me-2"></i>Generate
-                            </button>
-                        </div>
-
-                        <div class="col-lg-3 col-md-6">
-                            <button type="button" class="btn btn-success w-100" id="exportBtn" disabled>
-                                <i class="fas fa-download me-2"></i>Export JSON
-                            </button>
-                        </div>
-
-                        <div class="col-lg-3 col-md-6">
-                            <button type="button" class="btn btn-secondary w-100" id="copyJsonBtn" disabled>
-                                <i class="fas fa-copy me-2"></i>Copy JSON
+            <form id="levelForm" class="controls" novalidate>
+                <div class="controls__row controls__row--wide">
+                    <!-- File Input -->
+                    <div class="field">
+                        <label for="fileInput" class="field__label">
+                            <i class="fas fa-folder-open" aria-hidden="true"></i>Load level (.json)
+                        </label>
+                        <div class="inputgroup">
+                            <input type="file" class="field__input field__input--file" id="fileInput"
+                                accept=".json,application/json">
+                            <button class="icon-btn" type="button" id="clearFileBtn" title="Clear file selection"
+                                aria-label="Clear file selection">
+                                <i class="fas fa-times" aria-hidden="true"></i>
                             </button>
                         </div>
                     </div>
-                </form>
+
+                    <!-- Seed Input -->
+                    <div class="field">
+                        <label for="seed" class="field__label">
+                            <i class="fas fa-dice" aria-hidden="true"></i>Seed
+                        </label>
+                        <div class="inputgroup">
+                            <input type="text" class="field__input" id="seed" name="seed"
+                                placeholder="Any text — same seed, same level" autocomplete="off">
+                            <button class="btn btn--shuffle" type="button" id="randomSeedBtn"
+                                title="Generate a random seed" aria-label="Generate a random seed">
+                                <i class="fas fa-shuffle" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls__row controls__row--sliders">
+                    <!-- Width -->
+                    <div class="field field--slider">
+                        <div class="slider__head">
+                            <label for="width" class="field__label">Grid width</label>
+                            <span class="slider__value" id="widthValue">10</span>
+                        </div>
+                        <input type="range" class="field__range" id="width" name="width" min="4" max="30"
+                            step="1" value="10">
+                        <div class="slider__scale"><span>4</span><span>30</span></div>
+                    </div>
+
+                    <!-- Height -->
+                    <div class="field field--slider">
+                        <div class="slider__head">
+                            <label for="height" class="field__label">Grid height</label>
+                            <span class="slider__value" id="heightValue">10</span>
+                        </div>
+                        <input type="range" class="field__range" id="height" name="height" min="4" max="30"
+                            step="1" value="10">
+                        <div class="slider__scale"><span>4</span><span>30</span></div>
+                    </div>
+
+                    <!-- Difficulty -->
+                    <div class="field field--slider">
+                        <div class="slider__head">
+                            <label for="difficulty" class="field__label">Difficulty</label>
+                            <span class="slider__value" id="difficultyValue">5</span>
+                        </div>
+                        <input type="range" class="field__range" id="difficulty" name="difficulty" min="1"
+                            max="10" step="1" value="5">
+                        <div class="slider__scale"><span>1</span><span>10</span></div>
+                    </div>
+                </div>
+
+                <div class="controls__row controls__row--actions">
+                    <div class="switch">
+                        <input class="switch__input" type="checkbox" id="useDFS" name="useDFS" checked>
+                        <label class="switch__label" for="useDFS"
+                            title="Cars are placed so that a start→exit path always exists (verified with breadth-first search).">
+                            <span class="switch__track" aria-hidden="true"><span class="switch__knob"></span></span>
+                            <span class="switch__text">Guarantee solvable path</span>
+                        </label>
+                    </div>
+
+                    <div class="controls__actions">
+                        <button type="submit" class="btn btn--primary">
+                            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>Generate
+                        </button>
+                        <button type="button" class="btn btn--tint-success" id="exportBtn" disabled>
+                            <i class="fas fa-download" aria-hidden="true"></i>Export JSON
+                        </button>
+                        <button type="button" class="btn btn--ghost" id="copyJsonBtn" disabled>
+                            <i class="fas fa-copy" aria-hidden="true"></i>Copy JSON
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <!-- ---------------------- Edit mode banner ---------------------- -->
+        <div id="modeBanner" class="mode-banner d-none" role="status">
+            <span class="mode-banner__text">
+                <i class="fas fa-pen-to-square" aria-hidden="true"></i><span id="modeBannerText"></span>
+            </span>
+            <button class="btn btn--sm btn--ghost-danger" id="cancelModeBtn" type="button">
+                <i class="fas fa-xmark" aria-hidden="true"></i>Cancel <kbd>Esc</kbd>
+            </button>
+        </div>
+
+        <!-- --------------------------- Grid ----------------------------- -->
+        <section class="workspace reveal" style="--d: 140ms" aria-label="Level workspace">
+            <div class="workspace__stage">
+                <div class="grid-toolbar glass-2">
+                    <div class="seg" role="group" aria-label="Zoom controls">
+                        <button class="icon-btn icon-btn--sm" id="zoomOut" type="button" title="Zoom out"
+                            aria-label="Zoom out"><i class="fas fa-minus" aria-hidden="true"></i></button>
+                        <span class="seg__value" id="zoomValue">100%</span>
+                        <button class="icon-btn icon-btn--sm" id="zoomIn" type="button" title="Zoom in"
+                            aria-label="Zoom in"><i class="fas fa-plus" aria-hidden="true"></i></button>
+                    </div>
+                    <button class="btn btn--sm btn--ghost" id="zoomFit" type="button"
+                        title="Fit grid to viewport">
+                        <i class="fas fa-expand" aria-hidden="true"></i>Fit
+                    </button>
+                    <span class="grid-toolbar__tip">
+                        <i class="fas fa-circle-info" aria-hidden="true"></i>Drag across cells to paint ·
+                        <kbd>Esc</kbd> cancels a tool
+                    </span>
+                </div>
+
+                <div class="grid-stage">
+                    <div class="grid-wrapper glass-2" id="gridWrapper">
+                        <div id="gridContainer" class="grid" role="grid"
+                            aria-label="Parking lot grid"></div>
+                    </div>
+
+                    <!-- Empty-lot hint (revealed by .is-empty) -->
+                    <div class="empty-state" aria-hidden="true">
+                        <i class="fas fa-square-parking" aria-hidden="true"></i>
+                        <strong>Empty lot</strong>
+                        <span>Choose <em>Add car</em> in the tools, then click the asphalt to place
+                            vehicles.</span>
+                    </div>
+
+                    <!-- Generation veil (revealed by .is-generating) -->
+                    <div class="gen-veil" aria-hidden="true">
+                        <span class="spinner" role="presentation"></span>Generating level…
+                    </div>
+                </div>
             </div>
 
-            <!-- ---------------------- Edit mode banner ---------------------- -->
-            <div id="modeBanner" class="mode-banner d-none">
-                <span><i class="fas fa-pen-to-square me-2"></i><span id="modeBannerText"></span></span>
-                <button class="btn btn-sm btn-outline-danger" id="cancelModeBtn" type="button">
-                    <i class="fas fa-xmark me-1"></i>Cancel (Esc)
+            <!-- ------------------------- Tools -------------------------- -->
+            <aside class="sidebar glass-1" id="sidebar" aria-label="Edit tools">
+                <div class="sidebar__heading">Edit tools</div>
+                <div class="tool-grid">
+                    <button id="addCarBtn" class="tool" type="button"
+                        title="Click (or drag) empty cells to add cars">
+                        <span class="tool__icon"><i class="fas fa-car" aria-hidden="true"></i></span>
+                        <span class="tool__body">
+                            <span class="tool__name">Add car</span>
+                            <span class="tool__desc">Click or drag empty cells</span>
+                        </span>
+                        <span class="tool__check" aria-hidden="true"><i class="fas fa-check"></i></span>
+                    </button>
+                    <button id="removeCarBtn" class="tool" type="button"
+                        title="Click (or drag across) cars to remove them">
+                        <span class="tool__icon"><i class="fas fa-trash-can" aria-hidden="true"></i></span>
+                        <span class="tool__body">
+                            <span class="tool__name">Remove car</span>
+                            <span class="tool__desc">Click or drag over cars</span>
+                        </span>
+                        <span class="tool__check" aria-hidden="true"><i class="fas fa-check"></i></span>
+                    </button>
+                    <button id="rotateCarBtn" class="tool" type="button"
+                        title="Click a car to rotate it 90° clockwise">
+                        <span class="tool__icon"><i class="fas fa-rotate-right" aria-hidden="true"></i></span>
+                        <span class="tool__body">
+                            <span class="tool__name">Rotate car</span>
+                            <span class="tool__desc">Turn a car 90° clockwise</span>
+                        </span>
+                        <span class="tool__check" aria-hidden="true"><i class="fas fa-check"></i></span>
+                    </button>
+                    <button id="setStartBtn" class="tool" type="button" title="Click a cell to place the start">
+                        <span class="tool__icon"><i class="fas fa-flag" aria-hidden="true"></i></span>
+                        <span class="tool__body">
+                            <span class="tool__name">Set start</span>
+                            <span class="tool__desc">Click any empty cell</span>
+                        </span>
+                        <span class="tool__check" aria-hidden="true"><i class="fas fa-check"></i></span>
+                    </button>
+                    <button id="setEndBtn" class="tool" type="button" title="Click a cell to place the exit">
+                        <span class="tool__icon"><i class="fas fa-flag-checkered" aria-hidden="true"></i></span>
+                        <span class="tool__body">
+                            <span class="tool__name">Set exit</span>
+                            <span class="tool__desc">Click any empty cell</span>
+                        </span>
+                        <span class="tool__check" aria-hidden="true"><i class="fas fa-check"></i></span>
+                    </button>
+                </div>
+
+                <div class="sidebar__divider" role="separator" aria-hidden="true"></div>
+                <div class="sidebar__heading">Actions</div>
+
+                <button id="validateBtn" class="btn btn--secondary w-full" type="button"
+                    title="Check whether a path from start to exit exists">
+                    <i class="fas fa-route" aria-hidden="true"></i>Check solvable
+                </button>
+                <button id="clearAllBtn" class="btn btn--tint-warning w-full" type="button"
+                    title="Remove all cars and reset start/exit">
+                    <i class="fas fa-broom" aria-hidden="true"></i>Clear all
+                </button>
+            </aside>
+        </section>
+
+        <!-- --------------------------- Stats ---------------------------- -->
+        <section class="stats glass-2 reveal" style="--d: 190ms" aria-label="Level statistics">
+            <div class="stat">
+                <span class="stat__label">Grid size</span>
+                <span class="stat__value" id="gridSizeStat">10×10</span>
+            </div>
+            <div class="stat">
+                <span class="stat__label">Cars</span>
+                <span class="stat__value" id="carCountStat">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat__label">Difficulty</span>
+                <span class="stat__value" id="difficultyStat">5</span>
+            </div>
+            <div class="stat">
+                <span class="stat__label">Fill</span>
+                <span class="stat__value" id="fillStat">0%</span>
+            </div>
+            <div class="stat">
+                <span class="stat__label">Start / Exit</span>
+                <span class="stat__value"><span id="startPosStat">(0, 0)</span> → <span
+                        id="endPosStat">(9, 9)</span></span>
+            </div>
+            <div class="stat">
+                <span class="stat__label">Status</span>
+                <span id="solvableBadge" class="badge badge-ok"><span class="badge__dot"
+                        aria-hidden="true"></span><span id="solvableStat">Solvable</span></span>
+            </div>
+            <div class="stat">
+                <span class="stat__label">Layout</span>
+                <span class="stat__value" id="layoutStat">Rows</span>
+            </div>
+        </section>
+
+        <!-- ---------------------------- JSON ---------------------------- -->
+        <section class="panel glass-2 reveal" style="--d: 240ms" aria-label="Level JSON">
+            <div class="panel__head panel__head--row">
+                <h2 class="panel__title">
+                    <i class="fas fa-code" aria-hidden="true"></i>Level JSON
+                    <span id="jsonCount" class="panel__meta"></span>
+                </h2>
+                <button class="btn btn--sm btn--ghost" id="toggleJsonBtn" type="button" aria-controls="jsonDisplay"
+                    aria-expanded="true">
+                    <i class="fas fa-chevron-up" aria-hidden="true"></i>Hide JSON
                 </button>
             </div>
-
-            <!-- --------------------------- Grid ----------------------------- -->
-            <div class="grid-container">
-                <div class="grid-wrapper-area flex-grow-1 min-w-0">
-                    <div class="grid-toolbar">
-                        <button class="btn btn-sm btn-outline-secondary" id="zoomOut" type="button"
-                            title="Zoom out" aria-label="Zoom out"><i class="fas fa-minus"></i></button>
-                        <span class="zoom-label" id="zoomValue">100%</span>
-                        <button class="btn btn-sm btn-outline-secondary" id="zoomIn" type="button"
-                            title="Zoom in" aria-label="Zoom in"><i class="fas fa-plus"></i></button>
-                        <button class="btn btn-sm btn-outline-secondary" id="zoomFit" type="button"
-                            title="Fit grid to viewport"><i class="fas fa-expand me-1"></i>Fit</button>
-                        <span class="text-muted small ms-auto">
-                            <i class="fas fa-circle-info me-1"></i>Tip: drag across cells to paint cars. Press
-                            <kbd>Esc</kbd> to cancel a tool.
-                        </span>
-                    </div>
-                    <div class="grid-wrapper" id="gridWrapper">
-                        <div id="gridContainer" class="grid" role="grid" aria-label="Parking lot grid"></div>
-                    </div>
-                </div>
-
-                <!-- ------------------------- Tools -------------------------- -->
-                <div id="sidebar" class="sidebar shadow-sm">
-                    <div class="sidebar-heading fw-bold text-muted text-uppercase small">Edit tools</div>
-                    <button id="addCarBtn" class="btn btn-primary" type="button"
-                        title="Click (or drag) empty cells to add cars">
-                        <i class="fas fa-car me-2"></i>Add car
-                    </button>
-                    <button id="removeCarBtn" class="btn btn-danger" type="button"
-                        title="Click (or drag across) cars to remove them">
-                        <i class="fas fa-trash-can me-2"></i>Remove car
-                    </button>
-                    <button id="rotateCarBtn" class="btn btn-info text-white" type="button"
-                        title="Click a car to rotate it 90° clockwise">
-                        <i class="fas fa-rotate-right me-2"></i>Rotate car
-                    </button>
-                    <button id="setStartBtn" class="btn btn-success" type="button" title="Click a cell to place the start">
-                        <i class="fas fa-flag me-2"></i>Set start
-                    </button>
-                    <button id="setEndBtn" class="btn btn-success" type="button" title="Click a cell to place the exit">
-                        <i class="fas fa-flag-checkered me-2"></i>Set exit
-                    </button>
-                    <hr>
-                    <button id="validateBtn" class="btn btn-outline-primary" type="button"
-                        title="Check whether a path from start to exit exists">
-                        <i class="fas fa-route me-2"></i>Check solvable
-                    </button>
-                    <button id="clearAllBtn" class="btn btn-warning" type="button"
-                        title="Remove all cars and reset start/exit">
-                        <i class="fas fa-broom me-2"></i>Clear all
-                    </button>
-                </div>
+            <div id="jsonDisplay" class="json-body">
+                <pre id="jsonContent" class="json-code" tabindex="0" aria-label="Level JSON source"></pre>
             </div>
+        </section>
 
-            <!-- --------------------------- Stats ---------------------------- -->
-            <div class="stats-container">
-                <div class="row g-2">
-                    <div class="col-lg-2 col-md-4 col-6">
-                        <div class="stat-chip"><span class="label">Grid size</span><span class="value"
-                                id="gridSizeStat">10×10</span></div>
-                    </div>
-                    <div class="col-lg-2 col-md-4 col-6">
-                        <div class="stat-chip"><span class="label">Cars</span><span class="value"
-                                id="carCountStat">0</span></div>
-                    </div>
-                    <div class="col-lg-2 col-md-4 col-6">
-                        <div class="stat-chip"><span class="label">Difficulty</span><span class="value"
-                                id="difficultyStat">5</span></div>
-                    </div>
-                    <div class="col-lg-2 col-md-4 col-6">
-                        <div class="stat-chip"><span class="label">Fill</span><span class="value"
-                                id="fillStat">0%</span></div>
-                    </div>
-                    <div class="col-lg-2 col-md-4 col-6">
-                        <div class="stat-chip"><span class="label">Start / Exit</span><span class="value"><span
-                                    id="startPosStat">(0, 0)</span> → <span id="endPosStat">(9, 9)</span></span></div>
-                    </div>
-                    <div class="col-lg-2 col-md-4 col-6">
-                        <div class="stat-chip"><span class="label">Status</span><span id="solvableBadge"
-                                class="badge rounded-pill badge-ok"><span id="solvableStat">Solvable</span></span></div>
-                    </div>
-                </div>
-                <div class="small text-muted mt-2">
-                    Layout: <span id="layoutStat" class="fw-bold">Rows</span>
-                </div>
-            </div>
-
-            <!-- ---------------------------- JSON ---------------------------- -->
-            <div class="json-container">
-                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                    <h3 class="mb-0"><i class="fas fa-code me-2"></i>Level JSON <span id="jsonCount"
-                            class="text-muted small fw-normal"></span></h3>
-                    <button class="btn btn-sm btn-outline-secondary" id="toggleJsonBtn" type="button">
-                        <i class="fas fa-code me-1"></i>Hide JSON
-                    </button>
-                </div>
-                <div id="jsonDisplay">
-                    <pre id="jsonContent"></pre>
-                </div>
-            </div>
-
-            <footer class="app-footer">
-                Parking Lot Level Generator · 100% client-side ·
-                <a href="docs/USAGE.md" target="_blank" rel="noopener">Usage guide</a> ·
-                <a href="docs/LEVEL_FORMAT.md" target="_blank" rel="noopener">Level format</a> ·
+        <footer class="app-footer reveal" style="--d: 300ms">
+            <span class="app-footer__brand"><i class="fas fa-square-parking" aria-hidden="true"></i>Parking Lot
+                Level Generator</span>
+            <span>·</span>
+            <span>100% client-side</span>
+            <nav class="app-footer__nav" aria-label="Documentation">
+                <a href="docs/USAGE.md" target="_blank" rel="noopener">Usage guide</a>
+                <a href="docs/LEVEL_FORMAT.md" target="_blank" rel="noopener">Level format</a>
                 <a href="docs/ARCHITECTURE.md" target="_blank" rel="noopener">Architecture</a>
-            </footer>
+            </nav>
+        </footer>
+    </main>
+
+    <!-- Drag & drop overlay (Layer 6) -->
+    <div id="dropOverlay" class="drop-overlay" aria-hidden="true">
+        <div class="drop-card glass-3">
+            <i class="fas fa-file-arrow-down" aria-hidden="true"></i>
+            <strong>Drop a .json level file to load it</strong>
+            <span>JSON levels load from anywhere on the page.</span>
         </div>
     </div>
 
-    <!-- Drag & drop overlay -->
-    <div id="dropOverlay" class="drop-overlay">
-        <div class="drop-card">
-            <i class="fas fa-file-arrow-down d-block mb-2"></i>
-            Drop a .json level file to load it
-        </div>
-    </div>
-
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- App modules (no build step required) -->

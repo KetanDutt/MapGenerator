@@ -56,7 +56,9 @@
     /* --------------------------- Notifications ------------------------ */
 
     function swalConfig(extra) {
-        return Object.assign({ theme: theme, backdrop: 'rgba(0,0,0,0.5)' }, extra || {});
+        // UI: theme-aware, softer veil (the blur itself comes from CSS).
+        const veil = theme === 'dark' ? 'rgba(4, 7, 14, 0.55)' : 'rgba(19, 24, 35, 0.38)';
+        return Object.assign({ theme: theme, backdrop: veil }, extra || {});
     }
 
     function toast(icon, title, text) {
@@ -107,10 +109,19 @@
 
     /* --------------------------- Sliders ----------------------------- */
 
+    /** UI: paint the filled portion of a range track (WebKit uses --fill). */
+    function paintSliderFill(el) {
+        const min = parseFloat(el.min) || 0;
+        const max = parseFloat(el.max) || 1;
+        const pct = ((parseFloat(el.value) - min) / (max - min)) * 100;
+        el.style.setProperty('--fill', pct + '%');
+    }
+
     function updateSliderLabels() {
         els.widthValue.textContent = els.width.value;
         els.heightValue.textContent = els.height.value;
         els.difficultyValue.textContent = els.difficulty.value;
+        ['width', 'height', 'difficulty'].forEach((k) => paintSliderFill(els[k]));
     }
 
     /* --------------------------- Grid render -------------------------- */
@@ -122,12 +133,14 @@
     /** Full (re)build of the grid DOM. Used after generate/load/clear. */
     function renderGrid() {
         const frag = document.createDocumentFragment();
+        let i = 0;
         for (let y = 0; y < level.height; y++) {
             for (let x = 0; x < level.width; x++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
                 cell.dataset.x = x;
                 cell.dataset.y = y;
+                cell.style.setProperty('--i', i++); // UI: staggered entrance delay
                 paintCell(cell, x, y);
                 frag.appendChild(cell);
             }
@@ -136,12 +149,23 @@
         els.gridContainer.style.setProperty('--cols', level.width);
         els.gridContainer.style.setProperty('--rows', level.height);
         els.gridContainer.appendChild(frag);
+
+        // UI: one-shot staggered entrance, disarmed after the animation window.
+        els.gridContainer.classList.remove('enter');
+        void els.gridContainer.offsetWidth; // restart the animation
+        els.gridContainer.classList.add('enter');
+        clearTimeout(renderGrid._enterTimer);
+        renderGrid._enterTimer = setTimeout(
+            () => els.gridContainer.classList.remove('enter'), 1400);
     }
 
     /** Update a single cell's classes/tooltip without touching the rest. */
     function updateCell(x, y) {
         const cell = els.gridContainer.children[cellIndex(x, y)];
-        if (cell) paintCell(cell, x, y);
+        if (cell) {
+            paintCell(cell, x, y);
+            cell.classList.add('pulse'); // UI: tactile state-change pulse
+        }
     }
 
     function paintCell(cell, x, y) {
@@ -193,6 +217,8 @@
         els.solvableBadge.classList.toggle('badge-ok', solvable);
         els.solvableBadge.classList.toggle('badge-bad', !solvable);
         els.exportBtn.classList.toggle('btn-outline-warning', !solvable);
+        // UI: reveal the empty-lot hint when the lot has no cars.
+        els.gridWrapper.classList.toggle('is-empty', level.cars.length === 0);
     }
 
     /** Re-sync every panel after a mutation. */
@@ -358,6 +384,7 @@
     function setGenerating(on) {
         generating = on;
         els.levelForm.classList.toggle('loading', on);
+        els.gridWrapper.classList.toggle('is-generating', on); // UI: generating veil
         const submitBtn = els.levelForm.querySelector('button[type="submit"]');
         if (submitBtn) submitBtn.disabled = on;
     }
@@ -557,8 +584,10 @@
 
     function fitZoom() {
         if (!level) return;
-        const wrapperWidth = els.gridWrapper.clientWidth - 24;
-        const wrapperHeight = Math.max(320, els.gridWrapper.clientHeight - 24);
+        // UI: account for the (responsive) stage padding so "Fit" is exact.
+        const pad = parseFloat(global.getComputedStyle(els.gridWrapper).paddingLeft) || 0;
+        const wrapperWidth = els.gridWrapper.clientWidth - pad * 2;
+        const wrapperHeight = Math.max(320, els.gridWrapper.clientHeight - pad * 2);
         const fitW = wrapperWidth / (level.width * (30 + 4));
         const fitH = wrapperHeight / (level.height * (30 + 4));
         zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.min(fitW, fitH, 1)));
@@ -579,6 +608,12 @@
 
         // Theme
         els.themeToggle.addEventListener('click', () => applyTheme(theme === 'dark' ? 'light' : 'dark'));
+
+        // UI: floating header condenses as content scrolls underneath.
+        const appHeader = $('appHeader');
+        const onScroll = () => appHeader.classList.toggle('scrolled', global.scrollY > 6);
+        global.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
 
         // Sliders
         ['width', 'height', 'difficulty'].forEach((k) =>
@@ -669,9 +704,10 @@
         // JSON panel toggle
         els.toggleJsonBtn.addEventListener('click', () => {
             const hidden = els.jsonDisplay.classList.toggle('d-none');
+            els.toggleJsonBtn.setAttribute('aria-expanded', String(!hidden));
             els.toggleJsonBtn.innerHTML = hidden
-                ? '<i class="fas fa-code me-1"></i> Show JSON'
-                : '<i class="fas fa-code me-1"></i> Hide JSON';
+                ? '<i class="fas fa-chevron-down" aria-hidden="true"></i> Show JSON'
+                : '<i class="fas fa-chevron-up" aria-hidden="true"></i> Hide JSON';
         });
 
         // Start with a generated sample level (deterministic seed).
