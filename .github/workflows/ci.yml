@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test suite (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['18', '20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # No install step: the project has zero dependencies by design.
+      - name: Run the test suite
+        run: node tools/test.js
+
+      - name: Verify the app shell ships everything it needs
+        run: |
+          node -e "
+          const fs = require('fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const required = [
+            'js/icons.js', 'js/rng.js', 'js/pathfinding.js', 'js/level.js',
+            'js/share.js', 'js/image.js', 'js/app.js',
+            'css/style.css', 'css/editor.css', 'vendor/sweetalert2/sweetalert2.min.js',
+            'vendor/sweetalert2/sweetalert2.min.css'
+          ];
+          required.forEach((file) => {
+            if (!html.includes(file)) throw new Error('index.html does not reference ' + file);
+            if (!fs.existsSync(file)) throw new Error('missing file: ' + file);
+          });
+          ['docs.html', 'css/docs.css', 'js/docs.js', 'js/icons.js', 'js/markdown.js',
+            'docs/USAGE.md', 'docs/ARCHITECTURE.md', 'docs/DESIGN.md', 'LICENSE'].forEach((file) => {
+            if (!fs.existsSync(file)) throw new Error('missing file: ' + file);
+          });
+          console.log('App shell OK — ' + required.length + ' assets present');
+          "
+
+      - name: Verify the app stays offline (no CDN references)
+        run: |
+          if grep -rnE '(src|href)="https?://' index.html docs.html | grep -v 'https://github.com/' ; then
+            echo "::error::The app shell must not load remote assets — vendor them instead."
+            exit 1
+          fi
+          echo "No remote assets referenced."

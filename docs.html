@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Documentation for the Parking Lot Level Generator.">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f7f8fb">
+    <title>Documentation · Parking Lot Level Generator</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232e6bee'/%3E%3Ctext x='50' y='72' font-size='68' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/docs.css">
+</head>
+
+<body>
+    <a class="skip-link" href="#docArticle">Skip to the document</a>
+    <div class="ambient" aria-hidden="true"></div>
+
+    <header class="app-header" id="appHeader">
+        <div class="app-header__inner glass-1">
+            <div class="app-brand">
+                <span class="app-brand__mark" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#i-book"></use></svg></span>
+                <span class="app-brand__name">Documentation</span>
+            </div>
+            <div class="app-header__actions">
+                <span class="app-badge" id="docCount">8 documents</span>
+                <a class="app-header__link" href="index.html" title="Back to the level editor">
+                    <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"></use></svg><span>Back to editor</span>
+                </a>
+                <button class="icon-btn icon-btn--theme" id="themeToggle" type="button"
+                    title="Switch to dark mode" aria-label="Toggle dark mode">
+                    <svg class="icon" aria-hidden="true"><use href="#i-moon"></use></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="docs-layout">
+        <aside class="docs-nav glass-1" aria-label="Documents">
+            <label class="docs-search">
+                <svg class="icon" aria-hidden="true"><use href="#i-magnifying-glass"></use></svg>
+                <input type="search" id="docFilter" placeholder="Filter documents" aria-label="Filter documents">
+            </label>
+            <nav id="docList" class="docs-nav__list"></nav>
+            <p class="docs-nav__empty d-none" id="docEmpty">No document matches that filter.</p>
+            <div class="docs-nav__foot">
+                <a class="docs-nav__link" href="https://github.com/KetanDutt/MapGenerator" target="_blank"
+                    rel="noopener noreferrer">
+                    <svg class="icon" aria-hidden="true"><use href="#i-github"></use></svg>Source repository
+                </a>
+            </div>
+        </aside>
+
+        <article class="docs-article glass-2" id="docArticle">
+            <div class="docs-article__head">
+                <h1 id="docTitle">Loading…</h1>
+                <p id="docBlurb" class="docs-article__blurb"></p>
+                <div class="docs-article__actions">
+                    <button class="btn btn--sm btn--ghost" id="copyLinkBtn" type="button">
+                        <svg class="icon" aria-hidden="true"><use href="#i-link"></use></svg>Copy link to this page
+                    </button>
+                    <a class="btn btn--sm btn--ghost" id="rawLink" href="#" target="_blank" rel="noopener noreferrer">
+                        <svg class="icon" aria-hidden="true"><use href="#i-file-lines"></use></svg>View raw Markdown
+                    </a>
+                </div>
+            </div>
+
+            <details class="docs-toc" id="tocBox">
+                <summary><svg class="icon" aria-hidden="true"><use href="#i-list-ul"></use></svg>On this page</summary>
+                <ol id="tocList"></ol>
+            </details>
+
+            <div id="docBody" class="docs-body"></div>
+
+            <div id="docError" class="docs-error d-none">
+                <svg class="icon" aria-hidden="true"><use href="#i-triangle-exclamation"></use></svg>
+                <strong>This document could not be loaded</strong>
+                <p>
+                    Browsers block reading local files from a <code>file://</code> page. Serve the folder
+                    over HTTP (for example <code>npm run serve</code> or
+                    <code>python3 -m http.server 8080</code>) and reload, or open
+                    <a id="errorRawLink" href="#" target="_blank" rel="noopener noreferrer">the raw Markdown file</a>
+                    directly.
+                </p>
+            </div>
+        </article>
+    </main>
+
+    <footer class="app-footer">
+        <span class="app-footer__brand"><svg class="icon" aria-hidden="true"><use href="#i-square-parking"></use></svg>Parking Lot
+            Level Generator</span>
+        <span aria-hidden="true">·</span>
+        <span>MIT licensed</span>
+        <a href="index.html">Level editor</a>
+    </footer>
+
+    <script src="js/icons.js"></script>
+    <script src="js/markdown.js"></script>
+    <script src="js/docs.js"></script>
+</body>
+
+</html>

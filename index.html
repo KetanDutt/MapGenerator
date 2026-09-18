@@ -1,24 +1,32 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light" data-theme="light">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
         content="A deterministic, seed-based generator and editor for grid-based parking lot puzzle levels.">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f4f5f8">
     <title>Parking Lot Level Generator</title>
     <link rel="icon"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232e6bee'/%3E%3Ctext x='50' y='72' font-size='68' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
 
-    <!-- Font Awesome (icons) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <!-- SweetAlert2 (toasts & dialogs) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <!-- App design system -->
+    <!--
+      Everything is served from this repository — no CDN, no network, no build
+      step. SweetAlert2 (MIT) is vendored in vendor/; its stylesheet must load
+      before the app design system so the overrides in style.css win.
+    -->
+    <link rel="stylesheet" href="vendor/sweetalert2/sweetalert2.min.css">
+    <!-- Design system: tokens, materials and shared primitives … -->
     <link rel="stylesheet" href="css/style.css">
+    <!-- … plus the editor-specific surface -->
+    <link rel="stylesheet" href="css/editor.css">
 </head>
 
 <body>
+    <a class="skip-link" href="#workspace">Skip to the level workspace</a>
+
     <!-- Ambient background field (Layer 0) -->
     <div class="ambient" aria-hidden="true"></div>
 
@@ -26,14 +34,21 @@
     <header class="app-header" id="appHeader">
         <div class="app-header__inner glass-1">
             <div class="app-brand">
-                <span class="app-brand__mark" aria-hidden="true"><i class="fas fa-square-parking"></i></span>
+                <span class="app-brand__mark" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#i-square-parking"></use></svg></span>
                 <span class="app-brand__name">Parking Lot Level Generator</span>
             </div>
             <div class="app-header__actions">
                 <span class="app-badge">100% client-side</span>
-                <button class="icon-btn icon-btn--theme" id="themeToggle" type="button" title="Toggle dark mode"
+                <a class="app-header__link" href="docs.html" title="Browse the documentation">
+                    <svg class="icon" aria-hidden="true"><use href="#i-book"></use></svg><span>Docs</span>
+                </a>
+                <button class="icon-btn" id="helpBtn" type="button" title="Keyboard shortcuts (?)"
+                    aria-label="Keyboard shortcuts" aria-haspopup="dialog">
+                    <svg class="icon" aria-hidden="true"><use href="#i-keyboard"></use></svg>
+                </button>
+                <button class="icon-btn icon-btn--theme" id="themeToggle" type="button" title="Switch to dark mode"
                     aria-label="Toggle dark mode">
-                    <i class="fas fa-moon" aria-hidden="true"></i>
+                    <svg class="icon" aria-hidden="true"><use href="#i-moon"></use></svg>
                 </button>
             </div>
         </div>
@@ -50,42 +65,52 @@
         </section>
 
         <!-- ------------------------- Controls ------------------------- -->
-        <section class="panel glass-2 reveal" style="--d: 70ms" aria-labelledby="controlsTitle">
+        <section class="panel glass-2 reveal" id="controlsPanel"
+            aria-labelledby="controlsTitle">
             <div class="panel__head">
                 <h2 class="panel__title" id="controlsTitle">
-                    <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>New level
+                    <svg class="icon" aria-hidden="true"><use href="#i-wand-magic-sparkles"></use></svg>New level
                 </h2>
                 <span class="panel__hint">Same seed, size and difficulty always rebuild the same level.</span>
             </div>
 
             <form id="levelForm" class="controls" novalidate>
                 <div class="controls__row controls__row--wide">
-                    <!-- File Input -->
+                    <!-- Level name -->
                     <div class="field">
-                        <label for="fileInput" class="field__label">
-                            <i class="fas fa-folder-open" aria-hidden="true"></i>Load level (.json)
+                        <label for="nameInput" class="field__label">
+                            <svg class="icon" aria-hidden="true"><use href="#i-tag"></use></svg>Level name <em>(optional)</em>
                         </label>
-                        <div class="inputgroup">
-                            <input type="file" class="field__input field__input--file" id="fileInput"
-                                accept=".json,application/json">
-                            <button class="icon-btn" type="button" id="clearFileBtn" title="Clear file selection"
-                                aria-label="Clear file selection">
-                                <i class="fas fa-times" aria-hidden="true"></i>
-                            </button>
-                        </div>
+                        <input type="text" class="field__input" id="nameInput" name="name" maxlength="60"
+                            placeholder="e.g. Rooftop rush" autocomplete="off">
                     </div>
 
-                    <!-- Seed Input -->
+                    <!-- Seed -->
                     <div class="field">
                         <label for="seed" class="field__label">
-                            <i class="fas fa-dice" aria-hidden="true"></i>Seed
+                            <svg class="icon" aria-hidden="true"><use href="#i-dice"></use></svg>Seed
                         </label>
                         <div class="inputgroup">
                             <input type="text" class="field__input" id="seed" name="seed"
                                 placeholder="Any text — same seed, same level" autocomplete="off">
                             <button class="btn btn--shuffle" type="button" id="randomSeedBtn"
                                 title="Generate a random seed" aria-label="Generate a random seed">
-                                <i class="fas fa-shuffle" aria-hidden="true"></i>
+                                <svg class="icon" aria-hidden="true"><use href="#i-shuffle"></use></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File input -->
+                    <div class="field">
+                        <label for="fileInput" class="field__label">
+                            <svg class="icon" aria-hidden="true"><use href="#i-folder-open"></use></svg>Load level (.json)
+                        </label>
+                        <div class="inputgroup">
+                            <input type="file" class="field__input field__input--file" id="fileInput"
+                                accept=".json,application/json">
+                            <button class="icon-btn" type="button" id="clearFileBtn" title="Clear file selection"
+                                aria-label="Clear file selection">
+                                <svg class="icon" aria-hidden="true"><use href="#i-xmark"></use></svg>
                             </button>
                         </div>
                     </div>
@@ -96,40 +121,52 @@
                     <div class="field field--slider">
                         <div class="slider__head">
                             <label for="width" class="field__label">Grid width</label>
-                            <span class="slider__value" id="widthValue">10</span>
+                            <output class="slider__value" id="widthValue" for="width">10</output>
                         </div>
-                        <input type="range" class="field__range" id="width" name="width" min="4" max="30"
-                            step="1" value="10">
-                        <div class="slider__scale"><span>4</span><span>30</span></div>
+                        <input type="range" class="field__range" id="width" name="width" min="4" max="30" step="1"
+                            value="10">
+                        <div class="slider__scale" aria-hidden="true"><span>4</span><span>30</span></div>
                     </div>
 
                     <!-- Height -->
                     <div class="field field--slider">
                         <div class="slider__head">
                             <label for="height" class="field__label">Grid height</label>
-                            <span class="slider__value" id="heightValue">10</span>
+                            <output class="slider__value" id="heightValue" for="height">10</output>
                         </div>
-                        <input type="range" class="field__range" id="height" name="height" min="4" max="30"
-                            step="1" value="10">
-                        <div class="slider__scale"><span>4</span><span>30</span></div>
+                        <input type="range" class="field__range" id="height" name="height" min="4" max="30" step="1"
+                            value="10">
+                        <div class="slider__scale" aria-hidden="true"><span>4</span><span>30</span></div>
                     </div>
 
                     <!-- Difficulty -->
                     <div class="field field--slider">
                         <div class="slider__head">
                             <label for="difficulty" class="field__label">Difficulty</label>
-                            <span class="slider__value" id="difficultyValue">5</span>
+                            <output class="slider__value" id="difficultyValue" for="difficulty">5</output>
                         </div>
-                        <input type="range" class="field__range" id="difficulty" name="difficulty" min="1"
-                            max="10" step="1" value="5">
-                        <div class="slider__scale"><span>1</span><span>10</span></div>
+                        <input type="range" class="field__range" id="difficulty" name="difficulty" min="1" max="10"
+                            step="1" value="5">
+                        <div class="slider__scale" aria-hidden="true"><span>1</span><span>10</span></div>
+                    </div>
+
+                    <!-- Route shape -->
+                    <div class="field field--route">
+                        <label for="routeMode" class="field__label">
+                            <svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>Route shape
+                        </label>
+                        <select class="field__input field__input--select" id="routeMode" name="routeMode">
+                            <option value="direct" selected>Direct — shortest way through</option>
+                            <option value="winding">Winding — forces a detour</option>
+                            <option value="maze">Maze — long, twisty route</option>
+                        </select>
                     </div>
                 </div>
 
                 <div class="controls__row controls__row--actions">
                     <div class="switch">
-                        <input class="switch__input" type="checkbox" id="useDFS" name="useDFS" checked>
-                        <label class="switch__label" for="useDFS"
+                        <input class="switch__input" type="checkbox" id="guaranteePath" name="guaranteePath" checked>
+                        <label class="switch__label" for="guaranteePath"
                             title="Cars are placed so that a start→exit path always exists (verified with breadth-first search).">
                             <span class="switch__track" aria-hidden="true"><span class="switch__knob"></span></span>
                             <span class="switch__text">Guarantee solvable path</span>
@@ -138,13 +175,23 @@
 
                     <div class="controls__actions">
                         <button type="submit" class="btn btn--primary">
-                            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>Generate
+                            <svg class="icon" aria-hidden="true"><use href="#i-wand-magic-sparkles"></use></svg>Generate
                         </button>
-                        <button type="button" class="btn btn--tint-success" id="exportBtn" disabled>
-                            <i class="fas fa-download" aria-hidden="true"></i>Export JSON
+                        <button type="button" class="btn btn--tint-success" id="exportBtn" disabled
+                            title="Download the level as JSON (Ctrl/Cmd+S)">
+                            <svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg>Export JSON
                         </button>
-                        <button type="button" class="btn btn--ghost" id="copyJsonBtn" disabled>
-                            <i class="fas fa-copy" aria-hidden="true"></i>Copy JSON
+                        <button type="button" class="btn btn--ghost" id="copyJsonBtn" disabled
+                            title="Copy the level JSON to the clipboard">
+                            <svg class="icon" aria-hidden="true"><use href="#i-copy"></use></svg>Copy JSON
+                        </button>
+                        <button type="button" class="btn btn--ghost" id="pngBtn" disabled
+                            title="Render the level to a PNG image">
+                            <svg class="icon" aria-hidden="true"><use href="#i-image"></use></svg>Export PNG
+                        </button>
+                        <button type="button" class="btn btn--ghost" id="shareBtn" disabled
+                            title="Copy a share link that reopens this exact level">
+                            <svg class="icon" aria-hidden="true"><use href="#i-link"></use></svg>Copy link
                         </button>
                     </div>
                 </div>
@@ -154,120 +201,159 @@
         <!-- ---------------------- Edit mode banner ---------------------- -->
         <div id="modeBanner" class="mode-banner d-none" role="status">
             <span class="mode-banner__text">
-                <i class="fas fa-pen-to-square" aria-hidden="true"></i><span id="modeBannerText"></span>
+                <svg class="icon" aria-hidden="true"><use href="#i-pen-to-square"></use></svg><span id="modeBannerText"></span>
             </span>
             <button class="btn btn--sm btn--ghost-danger" id="cancelModeBtn" type="button">
-                <i class="fas fa-xmark" aria-hidden="true"></i>Cancel <kbd>Esc</kbd>
+                <svg class="icon" aria-hidden="true"><use href="#i-xmark"></use></svg>Cancel <kbd>Esc</kbd>
             </button>
         </div>
 
         <!-- --------------------------- Grid ----------------------------- -->
-        <section class="workspace reveal" style="--d: 140ms" aria-label="Level workspace">
+        <section class="workspace reveal" id="workspace" aria-label="Level workspace">
             <div class="workspace__stage">
                 <div class="grid-toolbar glass-2">
                     <div class="seg" role="group" aria-label="Zoom controls">
-                        <button class="icon-btn icon-btn--sm" id="zoomOut" type="button" title="Zoom out"
-                            aria-label="Zoom out"><i class="fas fa-minus" aria-hidden="true"></i></button>
+                        <button class="icon-btn icon-btn--sm" id="zoomOut" type="button" title="Zoom out (-)"
+                            aria-label="Zoom out"><svg class="icon" aria-hidden="true"><use href="#i-minus"></use></svg></button>
                         <span class="seg__value" id="zoomValue">100%</span>
-                        <button class="icon-btn icon-btn--sm" id="zoomIn" type="button" title="Zoom in"
-                            aria-label="Zoom in"><i class="fas fa-plus" aria-hidden="true"></i></button>
+                        <button class="icon-btn icon-btn--sm" id="zoomIn" type="button" title="Zoom in (+)"
+                            aria-label="Zoom in"><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></button>
                     </div>
-                    <button class="btn btn--sm btn--ghost" id="zoomFit" type="button"
-                        title="Fit grid to viewport">
-                        <i class="fas fa-expand" aria-hidden="true"></i>Fit
+                    <button class="btn btn--sm btn--ghost" id="zoomFit" type="button" title="Fit grid to viewport (0)">
+                        <svg class="icon" aria-hidden="true"><use href="#i-expand"></use></svg>Fit
                     </button>
+
+                    <span class="grid-toolbar__sep" aria-hidden="true"></span>
+
+                    <button class="icon-btn icon-btn--sm" id="undoBtn" type="button" disabled
+                        title="Undo (Ctrl/Cmd+Z)" aria-label="Undo">
+                        <svg class="icon" aria-hidden="true"><use href="#i-rotate-left"></use></svg>
+                    </button>
+                    <button class="icon-btn icon-btn--sm" id="redoBtn" type="button" disabled
+                        title="Redo (Ctrl/Cmd+Shift+Z)" aria-label="Redo">
+                        <svg class="icon" aria-hidden="true"><use href="#i-rotate-right"></use></svg>
+                    </button>
+
+                    <span class="grid-toolbar__sep" aria-hidden="true"></span>
+
+                    <button class="btn btn--sm btn--ghost" id="routeToggleBtn" type="button" aria-pressed="false"
+                        title="Highlight the shortest start→exit route">
+                        <svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>Show route
+                    </button>
+
                     <span class="grid-toolbar__tip">
-                        <i class="fas fa-circle-info" aria-hidden="true"></i>Drag across cells to paint ·
-                        <kbd>Esc</kbd> cancels a tool
+                        <svg class="icon" aria-hidden="true"><use href="#i-circle-info"></use></svg>Drag across cells to paint ·
+                        <kbd>Esc</kbd> cancels · <kbd>?</kbd> shortcuts
                     </span>
                 </div>
 
                 <div class="grid-stage">
+                    <!-- NOTE: the state classes live on #gridWrapper and the overlays are
+                         matched with `~` sibling selectors in style.css — keep the order. -->
                     <div class="grid-wrapper glass-2" id="gridWrapper">
-                        <div id="gridContainer" class="grid" role="grid"
-                            aria-label="Parking lot grid"></div>
+                        <div id="gridContainer" class="grid" role="grid" tabindex="0" aria-label="Parking lot grid"
+                            aria-describedby="gridHelp"></div>
                     </div>
 
                     <!-- Empty-lot hint (revealed by .is-empty) -->
-                    <div class="empty-state" aria-hidden="true">
-                        <i class="fas fa-square-parking" aria-hidden="true"></i>
+                    <div class="empty-state">
+                        <svg class="icon" aria-hidden="true"><use href="#i-square-parking"></use></svg>
                         <strong>Empty lot</strong>
-                        <span>Choose <em>Add car</em> in the tools, then click the asphalt to place
-                            vehicles.</span>
+                        <span>The lot is waiting: place vehicles by hand, or generate a packed level in
+                            one click.</span>
+                        <button class="btn btn--sm btn--secondary" id="emptyAddCarBtn" type="button">
+                            <svg class="icon" aria-hidden="true"><use href="#i-car"></use></svg>Add cars
+                        </button>
                     </div>
 
                     <!-- Generation veil (revealed by .is-generating) -->
                     <div class="gen-veil" aria-hidden="true">
-                        <span class="spinner" role="presentation"></span>Generating level…
+                        <span class="spinner" role="presentation"></span>
+                        <span id="genVeilText">Generating level…</span>
+                        <span class="progress" aria-hidden="true"><span class="progress__bar"
+                                id="genProgress"></span></span>
                     </div>
                 </div>
+                <p id="gridHelp" class="sr-only">
+                    Use the arrow keys to move through the grid, Enter or Space to apply the selected tool,
+                    Delete to remove a car and R to rotate one.
+                </p>
             </div>
 
             <!-- ------------------------- Tools -------------------------- -->
             <aside class="sidebar glass-1" id="sidebar" aria-label="Edit tools">
                 <div class="sidebar__heading">Edit tools</div>
                 <div class="tool-grid">
-                    <button id="addCarBtn" class="tool" type="button"
-                        title="Click (or drag) empty cells to add cars">
-                        <span class="tool__icon"><i class="fas fa-car" aria-hidden="true"></i></span>
+                    <button id="addCarBtn" class="tool" type="button" aria-pressed="false"
+                        title="Click (or drag) empty cells to add cars — shortcut 1">
+                        <span class="tool__icon"><svg class="icon" aria-hidden="true"><use href="#i-car"></use></svg></span>
                         <span class="tool__body">
                             <span class="tool__name">Add car</span>
-                            <span class="tool__desc">Click or drag empty cells</span>
+                            <span class="tool__desc">Click or drag empty cells · <kbd>1</kbd></span>
                         </span>
-                        <span class="tool__check" aria-hidden="true"><i class="fas fa-check"></i></span>
+                        <span class="tool__check" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></span>
                     </button>
-                    <button id="removeCarBtn" class="tool" type="button"
-                        title="Click (or drag across) cars to remove them">
-                        <span class="tool__icon"><i class="fas fa-trash-can" aria-hidden="true"></i></span>
+                    <button id="removeCarBtn" class="tool" type="button" aria-pressed="false"
+                        title="Click (or drag across) cars to remove them — shortcut 2">
+                        <span class="tool__icon"><svg class="icon" aria-hidden="true"><use href="#i-trash-can"></use></svg></span>
                         <span class="tool__body">
                             <span class="tool__name">Remove car</span>
-                            <span class="tool__desc">Click or drag over cars</span>
+                            <span class="tool__desc">Click or drag over cars · <kbd>2</kbd></span>
                         </span>
-                        <span class="tool__check" aria-hidden="true"><i class="fas fa-check"></i></span>
+                        <span class="tool__check" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></span>
                     </button>
-                    <button id="rotateCarBtn" class="tool" type="button"
-                        title="Click a car to rotate it 90° clockwise">
-                        <span class="tool__icon"><i class="fas fa-rotate-right" aria-hidden="true"></i></span>
+                    <button id="rotateCarBtn" class="tool" type="button" aria-pressed="false"
+                        title="Click a car to rotate it 90° clockwise — shortcut 3">
+                        <span class="tool__icon"><svg class="icon" aria-hidden="true"><use href="#i-rotate-right"></use></svg></span>
                         <span class="tool__body">
                             <span class="tool__name">Rotate car</span>
-                            <span class="tool__desc">Turn a car 90° clockwise</span>
+                            <span class="tool__desc">Turn a car 90° clockwise · <kbd>3</kbd></span>
                         </span>
-                        <span class="tool__check" aria-hidden="true"><i class="fas fa-check"></i></span>
+                        <span class="tool__check" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></span>
                     </button>
-                    <button id="setStartBtn" class="tool" type="button" title="Click a cell to place the start">
-                        <span class="tool__icon"><i class="fas fa-flag" aria-hidden="true"></i></span>
+                    <button id="setStartBtn" class="tool" type="button" aria-pressed="false"
+                        title="Click a cell to place the start — shortcut 4">
+                        <span class="tool__icon"><svg class="icon" aria-hidden="true"><use href="#i-flag"></use></svg></span>
                         <span class="tool__body">
                             <span class="tool__name">Set start</span>
-                            <span class="tool__desc">Click any empty cell</span>
+                            <span class="tool__desc">Click any empty cell · <kbd>4</kbd></span>
                         </span>
-                        <span class="tool__check" aria-hidden="true"><i class="fas fa-check"></i></span>
+                        <span class="tool__check" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></span>
                     </button>
-                    <button id="setEndBtn" class="tool" type="button" title="Click a cell to place the exit">
-                        <span class="tool__icon"><i class="fas fa-flag-checkered" aria-hidden="true"></i></span>
+                    <button id="setEndBtn" class="tool" type="button" aria-pressed="false"
+                        title="Click a cell to place the exit — shortcut 5">
+                        <span class="tool__icon"><svg class="icon" aria-hidden="true"><use href="#i-flag-checkered"></use></svg></span>
                         <span class="tool__body">
                             <span class="tool__name">Set exit</span>
-                            <span class="tool__desc">Click any empty cell</span>
+                            <span class="tool__desc">Click any empty cell · <kbd>5</kbd></span>
                         </span>
-                        <span class="tool__check" aria-hidden="true"><i class="fas fa-check"></i></span>
+                        <span class="tool__check" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></span>
                     </button>
                 </div>
 
                 <div class="sidebar__divider" role="separator" aria-hidden="true"></div>
                 <div class="sidebar__heading">Actions</div>
 
-                <button id="validateBtn" class="btn btn--secondary w-full" type="button"
-                    title="Check whether a path from start to exit exists">
-                    <i class="fas fa-route" aria-hidden="true"></i>Check solvable
-                </button>
-                <button id="clearAllBtn" class="btn btn--tint-warning w-full" type="button"
-                    title="Remove all cars and reset start/exit">
-                    <i class="fas fa-broom" aria-hidden="true"></i>Clear all
-                </button>
+                <div class="sidebar__actions">
+                    <button id="validateBtn" class="btn btn--secondary w-full" type="button"
+                        title="Check whether a path from start to exit exists">
+                        <svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>Check solvable
+                    </button>
+                    <button id="resizeBtn" class="btn btn--secondary w-full" type="button"
+                        title="Crop or pad the current level to a new grid size">
+                        <svg class="icon" aria-hidden="true"><use href="#i-crop-simple"></use></svg>Resize grid
+                    </button>
+                    <button id="clearAllBtn" class="btn btn--tint-warning w-full" type="button"
+                        title="Remove all cars and reset start/exit">
+                        <svg class="icon" aria-hidden="true"><use href="#i-broom"></use></svg>Clear all
+                    </button>
+                </div>
             </aside>
         </section>
 
         <!-- --------------------------- Stats ---------------------------- -->
-        <section class="stats glass-2 reveal" style="--d: 190ms" aria-label="Level statistics">
+        <section class="stats glass-2 reveal" id="statsSection"
+            aria-label="Level statistics">
             <div class="stat">
                 <span class="stat__label">Grid size</span>
                 <span class="stat__value" id="gridSizeStat">10×10</span>
@@ -277,12 +363,12 @@
                 <span class="stat__value" id="carCountStat">0</span>
             </div>
             <div class="stat">
-                <span class="stat__label">Difficulty</span>
-                <span class="stat__value" id="difficultyStat">5</span>
-            </div>
-            <div class="stat">
                 <span class="stat__label">Fill</span>
                 <span class="stat__value" id="fillStat">0%</span>
+            </div>
+            <div class="stat">
+                <span class="stat__label">Difficulty</span>
+                <span class="stat__value" id="difficultyStat">5</span>
             </div>
             <div class="stat">
                 <span class="stat__label">Start / Exit</span>
@@ -290,61 +376,103 @@
                         id="endPosStat">(9, 9)</span></span>
             </div>
             <div class="stat">
-                <span class="stat__label">Status</span>
-                <span id="solvableBadge" class="badge badge-ok"><span class="badge__dot"
-                        aria-hidden="true"></span><span id="solvableStat">Solvable</span></span>
+                <span class="stat__label">Route</span>
+                <span class="stat__value" id="routeStat">—</span>
             </div>
             <div class="stat">
                 <span class="stat__label">Layout</span>
                 <span class="stat__value" id="layoutStat">Rows</span>
             </div>
+            <div class="stat">
+                <span class="stat__label">Status</span>
+                <span id="solvableBadge" class="badge badge-ok"><span class="badge__dot"
+                        aria-hidden="true"></span><span id="solvableStat">Solvable</span></span>
+            </div>
         </section>
 
         <!-- ---------------------------- JSON ---------------------------- -->
-        <section class="panel glass-2 reveal" style="--d: 240ms" aria-label="Level JSON">
+        <section class="panel glass-2 reveal" id="jsonPanel" aria-label="Level JSON">
             <div class="panel__head panel__head--row">
                 <h2 class="panel__title">
-                    <i class="fas fa-code" aria-hidden="true"></i>Level JSON
+                    <svg class="icon" aria-hidden="true"><use href="#i-code"></use></svg>Level JSON
                     <span id="jsonCount" class="panel__meta"></span>
                 </h2>
-                <button class="btn btn--sm btn--ghost" id="toggleJsonBtn" type="button" aria-controls="jsonDisplay"
-                    aria-expanded="true">
-                    <i class="fas fa-chevron-up" aria-hidden="true"></i>Hide JSON
-                </button>
+                <div class="panel__tools">
+                    <label class="check" title="Include the derived grid matrix in the exported/copied JSON">
+                        <input type="checkbox" id="includeGrid" checked>
+                        <span>Include grid matrix</span>
+                    </label>
+                    <button class="btn btn--sm btn--ghost" id="toggleJsonBtn" type="button"
+                        aria-controls="jsonDisplay" aria-expanded="true">
+                        <svg class="icon" aria-hidden="true"><use href="#i-chevron-up"></use></svg>Hide JSON
+                    </button>
+                </div>
             </div>
             <div id="jsonDisplay" class="json-body">
                 <pre id="jsonContent" class="json-code" tabindex="0" aria-label="Level JSON source"></pre>
             </div>
         </section>
 
-        <footer class="app-footer reveal" style="--d: 300ms">
-            <span class="app-footer__brand"><i class="fas fa-square-parking" aria-hidden="true"></i>Parking Lot
+        <footer class="app-footer reveal">
+            <span class="app-footer__brand"><svg class="icon" aria-hidden="true"><use href="#i-square-parking"></use></svg>Parking Lot
                 Level Generator</span>
-            <span>·</span>
+            <span aria-hidden="true">·</span>
             <span>100% client-side</span>
             <nav class="app-footer__nav" aria-label="Documentation">
-                <a href="docs/USAGE.md" target="_blank" rel="noopener">Usage guide</a>
-                <a href="docs/LEVEL_FORMAT.md" target="_blank" rel="noopener">Level format</a>
-                <a href="docs/ARCHITECTURE.md" target="_blank" rel="noopener">Architecture</a>
+                <a href="docs.html#usage">Usage guide</a>
+                <a href="docs.html#level-format">Level format</a>
+                <a href="docs.html#architecture">Architecture</a>
+                <a href="docs.html">All docs</a>
             </nav>
+            <button class="app-footer__button" id="shortcutsLink" type="button">
+                <svg class="icon" aria-hidden="true"><use href="#i-keyboard"></use></svg>Shortcuts
+            </button>
         </footer>
     </main>
 
     <!-- Drag & drop overlay (Layer 6) -->
     <div id="dropOverlay" class="drop-overlay" aria-hidden="true">
         <div class="drop-card glass-3">
-            <i class="fas fa-file-arrow-down" aria-hidden="true"></i>
+            <svg class="icon" aria-hidden="true"><use href="#i-file-arrow-down"></use></svg>
             <strong>Drop a .json level file to load it</strong>
             <span>JSON levels load from anywhere on the page.</span>
         </div>
     </div>
 
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- App modules (no build step required) -->
+    <!-- Floating notifications (layer 6) -->
+    <div id="toastHost" class="toast-host" aria-live="polite" aria-atomic="false"></div>
+
+    <!-- Compact section navigation (small screens only, layer 3) -->
+    <nav class="mobile-nav" id="mobileNav" aria-label="Jump to a section">
+        <div class="mobile-nav__list glass-3">
+            <span class="mobile-nav__ind" aria-hidden="true"></span>
+            <a class="mobile-nav__link is-active" href="#controlsPanel" data-target="controlsPanel">
+                <svg class="icon" aria-hidden="true"><use href="#i-wand-magic-sparkles"></use></svg>Level
+            </a>
+            <a class="mobile-nav__link" href="#workspace" data-target="workspace">
+                <svg class="icon" aria-hidden="true"><use href="#i-square-parking"></use></svg>Lot
+            </a>
+            <a class="mobile-nav__link" href="#statsSection" data-target="statsSection">
+                <svg class="icon" aria-hidden="true"><use href="#i-lightbulb"></use></svg>Stats
+            </a>
+            <a class="mobile-nav__link" href="#jsonPanel" data-target="jsonPanel">
+                <svg class="icon" aria-hidden="true"><use href="#i-code"></use></svg>JSON
+            </a>
+        </div>
+    </nav>
+
+    <!-- Screen-reader announcements (status changes, edits, load results) -->
+    <div id="liveRegion" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Vendor script (optional: the app falls back to native dialogs) -->
+    <script src="vendor/sweetalert2/sweetalert2.min.js"></script>
+    <!-- App modules (no build step required, no bundler, no imports) -->
+    <script src="js/icons.js"></script>
     <script src="js/rng.js"></script>
     <script src="js/pathfinding.js"></script>
     <script src="js/level.js"></script>
+    <script src="js/share.js"></script>
+    <script src="js/image.js"></script>
     <script src="js/app.js"></script>
 </body>
 
