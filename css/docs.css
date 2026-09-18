@@ -1,0 +1,366 @@
+/* ==========================================================================
+   Documentation viewer — page shell + Markdown typography
+   --------------------------------------------------------------------------
+   Loads after css/style.css and reuses its design tokens, so the viewer
+   inherits the light/dark themes, glass materials and motion rules.
+   ========================================================================== */
+
+.docs-layout {
+    position: relative;
+    z-index: var(--z-content);
+    display: grid;
+    grid-template-columns: 286px minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 96px clamp(14px, 3vw, 28px) 40px;
+}
+
+/* ------------------------------ Sidebar nav ----------------------------- */
+
+.docs-nav {
+    position: sticky;
+    top: 84px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border-radius: var(--radius-lg);
+    max-height: calc(100vh - 110px);
+    overflow: auto;
+}
+
+.docs-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--field-bg);
+    border: 1px solid var(--line-1);
+    border-radius: var(--radius-sm);
+}
+
+.docs-search > .icon {
+    font-size: 0.78rem;
+    color: var(--text-3);
+}
+
+.docs-search input {
+    width: 100%;
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--text-1);
+    background: none;
+    border: 0;
+    outline: none;
+}
+
+.docs-nav__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.docs-nav__link {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 11px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: background-color var(--dur-2) ease, border-color var(--dur-2) ease;
+}
+
+.docs-nav__link:hover { background: var(--hover-surface); }
+
+.docs-nav__link.is-active {
+    background: var(--accent-soft);
+    border-color: color-mix(in srgb, var(--accent-1) 26%, transparent);
+}
+
+.docs-nav__title {
+    font-size: 0.88rem;
+    font-weight: 620;
+    color: var(--text-1);
+}
+
+.docs-nav__link.is-active .docs-nav__title { color: var(--accent-1); }
+
+.docs-nav__blurb {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-3);
+}
+
+.docs-nav__foot {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line-1);
+}
+
+.docs-nav__foot .docs-nav__link {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--text-2);
+}
+
+/* ------------------------------- Article -------------------------------- */
+
+.docs-article {
+    padding: clamp(18px, 3vw, 34px);
+    border-radius: var(--radius-lg);
+    min-width: 0;
+}
+
+.docs-article__head { border-bottom: 1px solid var(--line-1); padding-bottom: 16px; }
+
+.docs-article__head h1 {
+    font-size: clamp(1.4rem, 2.4vw, 1.85rem);
+}
+
+.docs-article__blurb {
+    margin-top: 6px;
+    font-size: 0.92rem;
+    color: var(--text-3);
+}
+
+.docs-article__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.docs-article__actions .btn { text-decoration: none; }
+
+/* Table of contents */
+.docs-toc {
+    margin-top: 16px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    background: var(--hover-surface);
+    border: 1px solid var(--line-1);
+    border-radius: var(--radius-md);
+}
+
+.docs-toc summary {
+    cursor: pointer;
+    font-weight: 620;
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.docs-toc ol {
+    margin: 10px 0 2px;
+    padding-left: 1.1rem;
+    columns: 2;
+    column-gap: 26px;
+}
+
+@media (max-width: 900px) {
+    .docs-toc ol { columns: 1; }
+}
+
+.docs-toc__item { margin: 3px 0; break-inside: avoid; }
+
+.docs-toc__item--h3 { padding-left: 14px; font-size: 0.94em; }
+
+.docs-toc a { color: var(--text-2); text-decoration: none; }
+
+.docs-toc a:hover { color: var(--accent-1); text-decoration: underline; }
+
+.docs-toc__item::marker { color: var(--text-3); }
+
+/* ----------------------------- Typography ------------------------------- */
+
+.docs-body {
+    margin-top: 22px;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text-2);
+}
+
+.docs-body h1,
+.docs-body h2,
+.docs-body h3,
+.docs-body h4 {
+    margin: 1.9em 0 0.6em;
+    color: var(--text-1);
+    scroll-margin-top: 96px;
+}
+
+.docs-body > :first-child { margin-top: 0; }
+
+.docs-body h1 { font-size: 1.5rem; }
+.docs-body h2 {
+    font-size: 1.22rem;
+    padding-bottom: 0.35em;
+    border-bottom: 1px solid var(--line-1);
+}
+.docs-body h3 { font-size: 1.04rem; }
+.docs-body h4 { font-size: 0.95rem; }
+
+.docs-body p { margin: 0.85em 0; }
+
+.docs-body a { color: var(--accent-1); text-decoration: none; }
+
+.docs-body a:hover { text-decoration: underline; }
+
+.docs-body strong { color: var(--text-1); font-weight: 650; }
+
+.docs-body ul,
+.docs-body ol { margin: 0.85em 0; padding-left: 1.4rem; }
+
+.docs-body li { margin: 0.3em 0; }
+
+.docs-body li > ul,
+.docs-body li > ol { margin: 0.3em 0; }
+
+.docs-body blockquote {
+    margin: 1em 0;
+    padding: 2px 16px;
+    border-left: 3px solid var(--accent-1);
+    background: var(--accent-soft);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: var(--text-2);
+}
+
+.docs-body hr {
+    margin: 2em 0;
+    border: 0;
+    border-top: 1px solid var(--line-1);
+}
+
+.docs-body code {
+    font-size: 0.85em;
+    background: var(--code-bg);
+    border: 1px solid var(--line-1);
+    border-radius: 5px;
+    padding: 1px 5px;
+}
+
+.md-pre {
+    margin: 1.1em 0;
+    padding: 14px 16px;
+    overflow: auto;
+    background: var(--json-bg);
+    border: 1px solid var(--json-border);
+    border-radius: var(--radius-md);
+}
+
+.md-pre code {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--json-text);
+    background: none;
+    border: 0;
+    padding: 0;
+    white-space: pre;
+}
+
+.md-table-wrap {
+    margin: 1.1em 0;
+    overflow-x: auto;
+    border: 1px solid var(--line-1);
+    border-radius: var(--radius-md);
+}
+
+.docs-body table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+}
+
+.docs-body th,
+.docs-body td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--line-1);
+    vertical-align: top;
+}
+
+.docs-body th {
+    color: var(--text-1);
+    font-weight: 640;
+    background: var(--hover-surface);
+    white-space: nowrap;
+}
+
+.docs-body tbody tr:last-child td { border-bottom: 0; }
+
+.docs-body kbd {
+    font-family: var(--font-mono);
+    font-size: 0.75em;
+    padding: 1px 5px;
+    border: 1px solid var(--line-1);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: var(--code-bg);
+    white-space: nowrap;
+}
+
+.docs-body__loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-3);
+}
+
+/* ------------------------------- Error card ----------------------------- */
+
+.docs-error {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 18px;
+    color: var(--text-2);
+    background: var(--warning-soft);
+    border: 1px solid color-mix(in srgb, var(--warning-1) 30%, transparent);
+    border-radius: var(--radius-md);
+}
+
+.docs-error > .icon { color: var(--warning-1); font-size: 1.2rem; }
+
+.docs-error strong { color: var(--text-1); }
+
+.docs-error p { margin: 0; font-size: 0.9rem; }
+
+/* ------------------------------- Responsive ----------------------------- */
+
+@media (max-width: 960px) {
+    .docs-layout {
+        grid-template-columns: 1fr;
+        padding-top: 84px;
+    }
+
+    .docs-nav {
+        position: static;
+        max-height: none;
+    }
+
+    .docs-nav__list {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .docs-nav__link { flex: 1 1 200px; }
+
+    .docs-nav__blurb { display: none; }
+}
+
+@media (max-width: 640px) {
+    .docs-layout { padding: 78px 12px 30px; gap: 14px; }
+
+    .docs-article { padding: 16px; }
+
+    .docs-body { font-size: 0.92rem; }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "parking-lot-level-generator",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Deterministic, seed-based generator and editor for grid-based parking lot puzzle levels. Zero build step, works offline from file://.",
+  "license": "MIT",
+  "keywords": [
+    "level-generator",
+    "procedural-generation",
+    "puzzle",
+    "parking-lot",
+    "pathfinding",
+    "canvas",
+    "vanilla-js"
+  ],
+  "homepage": "https://github.com/KetanDutt/MapGenerator#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KetanDutt/MapGenerator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/KetanDutt/MapGenerator/issues"
+  },
+  "type": "commonjs",
+  "scripts": {
+    "start": "node tools/serve.js",
+    "serve": "node tools/serve.js",
+    "test": "node tools/test.js",
+    "test:quiet": "node tools/test.js --quiet",
+    "test:ui": "node tools/test.js --filter=UI"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
