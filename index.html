@@ -18,8 +18,10 @@
       before the app design system so the overrides in style.css win.
     -->
     <link rel="stylesheet" href="vendor/sweetalert2/sweetalert2.min.css">
-    <!-- App design system -->
+    <!-- Design system: tokens, materials and shared primitives … -->
     <link rel="stylesheet" href="css/style.css">
+    <!-- … plus the editor-specific surface -->
+    <link rel="stylesheet" href="css/editor.css">
 </head>
 
 <body>
@@ -63,7 +65,8 @@
         </section>
 
         <!-- ------------------------- Controls ------------------------- -->
-        <section class="panel glass-2 reveal" style="--d: 70ms" aria-labelledby="controlsTitle">
+        <section class="panel glass-2 reveal" id="controlsPanel"
+            aria-labelledby="controlsTitle">
             <div class="panel__head">
                 <h2 class="panel__title" id="controlsTitle">
                     <svg class="icon" aria-hidden="true"><use href="#i-wand-magic-sparkles"></use></svg>New level
@@ -206,7 +209,7 @@
         </div>
 
         <!-- --------------------------- Grid ----------------------------- -->
-        <section class="workspace reveal" id="workspace" style="--d: 140ms" aria-label="Level workspace">
+        <section class="workspace reveal" id="workspace" aria-label="Level workspace">
             <div class="workspace__stage">
                 <div class="grid-toolbar glass-2">
                     <div class="seg" role="group" aria-label="Zoom controls">
@@ -253,16 +256,22 @@
                     </div>
 
                     <!-- Empty-lot hint (revealed by .is-empty) -->
-                    <div class="empty-state" aria-hidden="true">
+                    <div class="empty-state">
                         <svg class="icon" aria-hidden="true"><use href="#i-square-parking"></use></svg>
                         <strong>Empty lot</strong>
-                        <span>Choose <em>Add car</em> in the tools, then click the asphalt to place
-                            vehicles.</span>
+                        <span>The lot is waiting: place vehicles by hand, or generate a packed level in
+                            one click.</span>
+                        <button class="btn btn--sm btn--secondary" id="emptyAddCarBtn" type="button">
+                            <svg class="icon" aria-hidden="true"><use href="#i-car"></use></svg>Add cars
+                        </button>
                     </div>
 
                     <!-- Generation veil (revealed by .is-generating) -->
                     <div class="gen-veil" aria-hidden="true">
-                        <span class="spinner" role="presentation"></span><span id="genVeilText">Generating level…</span>
+                        <span class="spinner" role="presentation"></span>
+                        <span id="genVeilText">Generating level…</span>
+                        <span class="progress" aria-hidden="true"><span class="progress__bar"
+                                id="genProgress"></span></span>
                     </div>
                 </div>
                 <p id="gridHelp" class="sr-only">
@@ -325,23 +334,26 @@
                 <div class="sidebar__divider" role="separator" aria-hidden="true"></div>
                 <div class="sidebar__heading">Actions</div>
 
-                <button id="validateBtn" class="btn btn--secondary w-full" type="button"
-                    title="Check whether a path from start to exit exists">
-                    <svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>Check solvable
-                </button>
-                <button id="resizeBtn" class="btn btn--secondary w-full" type="button"
-                    title="Crop or pad the current level to a new grid size">
-                    <svg class="icon" aria-hidden="true"><use href="#i-crop-simple"></use></svg>Resize grid
-                </button>
-                <button id="clearAllBtn" class="btn btn--tint-warning w-full" type="button"
-                    title="Remove all cars and reset start/exit">
-                    <svg class="icon" aria-hidden="true"><use href="#i-broom"></use></svg>Clear all
-                </button>
+                <div class="sidebar__actions">
+                    <button id="validateBtn" class="btn btn--secondary w-full" type="button"
+                        title="Check whether a path from start to exit exists">
+                        <svg class="icon" aria-hidden="true"><use href="#i-route"></use></svg>Check solvable
+                    </button>
+                    <button id="resizeBtn" class="btn btn--secondary w-full" type="button"
+                        title="Crop or pad the current level to a new grid size">
+                        <svg class="icon" aria-hidden="true"><use href="#i-crop-simple"></use></svg>Resize grid
+                    </button>
+                    <button id="clearAllBtn" class="btn btn--tint-warning w-full" type="button"
+                        title="Remove all cars and reset start/exit">
+                        <svg class="icon" aria-hidden="true"><use href="#i-broom"></use></svg>Clear all
+                    </button>
+                </div>
             </aside>
         </section>
 
         <!-- --------------------------- Stats ---------------------------- -->
-        <section class="stats glass-2 reveal" style="--d: 190ms" aria-label="Level statistics">
+        <section class="stats glass-2 reveal" id="statsSection"
+            aria-label="Level statistics">
             <div class="stat">
                 <span class="stat__label">Grid size</span>
                 <span class="stat__value" id="gridSizeStat">10×10</span>
@@ -379,7 +391,7 @@
         </section>
 
         <!-- ---------------------------- JSON ---------------------------- -->
-        <section class="panel glass-2 reveal" style="--d: 240ms" aria-label="Level JSON">
+        <section class="panel glass-2 reveal" id="jsonPanel" aria-label="Level JSON">
             <div class="panel__head panel__head--row">
                 <h2 class="panel__title">
                     <svg class="icon" aria-hidden="true"><use href="#i-code"></use></svg>Level JSON
@@ -401,7 +413,7 @@
             </div>
         </section>
 
-        <footer class="app-footer reveal" style="--d: 300ms">
+        <footer class="app-footer reveal">
             <span class="app-footer__brand"><svg class="icon" aria-hidden="true"><use href="#i-square-parking"></use></svg>Parking Lot
                 Level Generator</span>
             <span aria-hidden="true">·</span>
@@ -426,6 +438,28 @@
             <span>JSON levels load from anywhere on the page.</span>
         </div>
     </div>
+
+    <!-- Floating notifications (layer 6) -->
+    <div id="toastHost" class="toast-host" aria-live="polite" aria-atomic="false"></div>
+
+    <!-- Compact section navigation (small screens only, layer 3) -->
+    <nav class="mobile-nav" id="mobileNav" aria-label="Jump to a section">
+        <div class="mobile-nav__list glass-3">
+            <span class="mobile-nav__ind" aria-hidden="true"></span>
+            <a class="mobile-nav__link is-active" href="#controlsPanel" data-target="controlsPanel">
+                <svg class="icon" aria-hidden="true"><use href="#i-wand-magic-sparkles"></use></svg>Level
+            </a>
+            <a class="mobile-nav__link" href="#workspace" data-target="workspace">
+                <svg class="icon" aria-hidden="true"><use href="#i-square-parking"></use></svg>Lot
+            </a>
+            <a class="mobile-nav__link" href="#statsSection" data-target="statsSection">
+                <svg class="icon" aria-hidden="true"><use href="#i-lightbulb"></use></svg>Stats
+            </a>
+            <a class="mobile-nav__link" href="#jsonPanel" data-target="jsonPanel">
+                <svg class="icon" aria-hidden="true"><use href="#i-code"></use></svg>JSON
+            </a>
+        </div>
+    </nav>
 
     <!-- Screen-reader announcements (status changes, edits, load results) -->
     <div id="liveRegion" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>

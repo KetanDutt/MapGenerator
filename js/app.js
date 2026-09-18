@@ -17,6 +17,9 @@
  *     skipped entirely while the JSON panel is collapsed).
  *  3. **Never trust the outside world.** Loaded files, share links and stored
  *     sessions all pass through `Level.sanitizeLevel`.
+ *  4. **Motion is CSS.** JS only names the state (a class, a custom property);
+ *     timings and easings live in the design tokens, so `prefers-reduced-motion`
+ *     can switch the whole interface to a calm mode on its own.
  *
  * Exposed (for debugging/tests) as `window.ParkingGen.App`.
  */
@@ -29,6 +32,9 @@
     const RNG = PG.RNG;
     const Share = PG.Share;
     const LevelImage = PG.Image;
+    // The sprite is optional: without js/icons.js the app still runs, it just
+    // loses its iconography.
+    const Icons = PG.Icons || { svg: function () { return ''; } };
 
     /* ----------------------------- Constants -------------------------- */
 
@@ -41,6 +47,8 @@
     const SESSION_DEBOUNCE_MS = 600; // localStorage write delay
     const MAX_FILE_BYTES = 8 * 1024 * 1024;
     const TOAST_DEDUPE_MS = 1200;
+    const TOAST_LIFE_MS = 3400;      // matches --toast-life in css/style.css
+    const TOAST_LIMIT = 4;           // oldest toast is dropped beyond this
     const SAMPLE = { width: 10, height: 10, difficulty: 5, seed: 'welcome' };
     const MIN_ZOOM = 0.5;
     const MAX_ZOOM = 2;
@@ -53,6 +61,18 @@
         setEnd: 'Setting the exit — click a cell',
         rotateCar: 'Rotating cars — click a car to turn it'
     };
+
+    /** Toast tone → sprite icon. */
+    const TOAST_ICONS = {
+        success: 'circle-check',
+        error: 'circle-xmark',
+        warning: 'triangle-exclamation',
+        info: 'circle-info',
+        question: 'circle-question'
+    };
+
+    /** Sections the compact mobile rail can jump to. */
+    const SECTIONS = ['controlsPanel', 'workspace', 'statsSection', 'jsonPanel'];
 
     const MODE_BUTTONS = {
         addCar: 'addCarBtn',
@@ -121,6 +141,16 @@
         ));
     }
 
+    function cssColor(prop, fallback) {
+        try {
+            const value = global.getComputedStyle(global.document.documentElement)
+                .getPropertyValue(prop);
+            return value && value.trim() ? value.trim() : fallback;
+        } catch (_) {
+            return fallback;
+        }
+    }
+
     function cssNumber(prop, fallback) {
         try {
             const value = parseFloat(global.getComputedStyle(global.document.documentElement)
@@ -144,7 +174,8 @@
             'endPosStat', 'layoutStat', 'fillStat', 'routeStat', 'solvableStat', 'solvableBadge',
             'modeBanner', 'modeBannerText', 'cancelModeBtn',
             'zoomOut', 'zoomIn', 'zoomFit', 'zoomValue', 'undoBtn', 'redoBtn', 'routeToggleBtn',
-            'toggleJsonBtn', 'includeGrid', 'dropOverlay', 'helpBtn', 'shortcutsLink', 'liveRegion'
+            'toggleJsonBtn', 'includeGrid', 'dropOverlay', 'helpBtn', 'shortcutsLink', 'liveRegion',
+            'toastHost', 'mobileNav', 'emptyAddCarBtn', 'genProgress'
         ].forEach((id) => { els[id] = global.document.getElementById(id); });
     }
 
@@ -160,9 +191,15 @@
     }
 
     /**
-     * Toast notification. Identical messages fired within a second of each
-     * other are suppressed so drag-painting over the same cell twice cannot
-     * stack up duplicate alerts.
+     * Toast notification.
+     *
+     * Rendered into `#toastHost` rather than SweetAlert2 so notifications share
+     * the app's material language, stack in one place and are cheap to animate
+     * (transform + opacity only). SweetAlert2 stays for dialogs, where its focus
+     * trapping is genuinely useful.
+     *
+     * Identical messages fired within a second of each other are suppressed so
+     * drag-painting over the same cell twice cannot stack up duplicate alerts.
      */
     function toast(icon, title, text) {
         const signature = icon + '|' + title + '|' + (text || '');
@@ -170,15 +207,49 @@
         if (state.lastToast.key === signature && now - state.lastToast.at < TOAST_DEDUPE_MS) return;
         state.lastToast = { key: signature, at: now };
 
-        if (global.Swal) {
-            global.Swal.fire(swalConfig({
-                icon, title, text, toast: true, position: 'top-end',
-                showConfirmButton: false, timer: 2400, timerProgressBar: true
-            }));
-        } else {
-            // Graceful fallback when the SweetAlert2 CDN is unavailable.
+        if (!els.toastHost) {
             console.log(`[${icon}] ${title}${text ? ' — ' + text : ''}`);
+            return;
         }
+
+        const node = global.document.createElement('div');
+        node.className = `toast glass-3 toast--${TOAST_ICONS[icon] ? icon : 'info'}`;
+        node.style.setProperty('--toast-life', TOAST_LIFE_MS + 'ms');
+        node.setAttribute('role', icon === 'error' ? 'alert' : 'status');
+        node.innerHTML =
+            `<span class="toast__icon">${Icons.svg(TOAST_ICONS[icon] || TOAST_ICONS.info)}</span>` +
+            '<span class="toast__body">' +
+            `<span class="toast__title">${escapeHtml(title)}</span>` +
+            (text ? `<span class="toast__text">${escapeHtml(text)}</span>` : '') +
+            '</span>' +
+            `<button class="toast__close" type="button" aria-label="Dismiss">${Icons.svg('xmark')}</button>` +
+            '<span class="toast__bar" aria-hidden="true"></span>';
+
+        let timer = null;
+        const detach = () => {
+            if (node.parentNode) node.parentNode.removeChild(node);
+        };
+        const dismiss = () => {
+            clearTimeout(timer);
+            node.classList.add('is-leaving');
+            global.setTimeout(detach, 220);
+        };
+        const arm = (ms) => {
+            clearTimeout(timer);
+            timer = global.setTimeout(dismiss, ms);
+        };
+
+        node.querySelector('.toast__close').addEventListener('click', dismiss);
+        // Hovering pauses the countdown (and the progress bar, via CSS).
+        node.addEventListener('mouseenter', () => clearTimeout(timer));
+        node.addEventListener('mouseleave', () => arm(900));
+
+        els.toastHost.appendChild(node);
+        while (els.toastHost.children.length > TOAST_LIMIT) {
+            els.toastHost.removeChild(els.toastHost.children[0]);
+        }
+        arm(TOAST_LIFE_MS);
+        return node;
     }
 
     function confirmDialog(opts) {
@@ -210,6 +281,10 @@
         const label = state.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
         els.themeToggle.title = label;
         els.themeToggle.setAttribute('aria-label', label);
+
+        // Keep the browser chrome in step with the app on mobile.
+        const meta = global.document.querySelector && global.document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', cssColor('--bg-0', state.theme === 'dark' ? '#0a0b0f' : '#f7f8fb'));
         try {
             global.localStorage.setItem(STORAGE.theme, state.theme);
         } catch (_) { /* private mode / storage disabled */ }
@@ -315,7 +390,6 @@
 
         els.gridContainer.innerHTML = '';
         els.gridContainer.style.setProperty('--cols', level.width);
-        els.gridContainer.style.setProperty('--rows', level.height);
         els.gridContainer.setAttribute('role', 'grid');
         els.gridContainer.setAttribute('aria-label',
             `Parking lot grid, ${level.width} by ${level.height}`);
@@ -448,25 +522,42 @@
         scheduleSessionSave();
     }
 
+    /**
+     * Write a stat value, nudging it only when it actually changed. The text is
+     * always the exact value (screen readers and tests read it directly); the
+     * animation is a CSS class layered on top.
+     *
+     * Two alternating classes restart the nudge instead of the usual
+     * "remove, read offsetWidth, re-add" trick — which would force a style and
+     * layout pass for every changed stat inside the render frame.
+     */
+    function setStat(el, value) {
+        if (!el || el.textContent === value) return;
+        el.textContent = value;
+        const next = el.classList.contains('bump') ? 'bump-alt' : 'bump';
+        el.classList.remove('bump', 'bump-alt');
+        el.classList.add(next);
+    }
+
     function refreshStats() {
         const level = state.level;
         const total = level.width * level.height;
 
-        els.gridSizeStat.textContent = `${level.width}×${level.height}`;
-        els.carCountStat.textContent = String(level.cars.length);
-        els.fillStat.textContent = Math.round((level.cars.length / total) * 100) + '%';
-        els.difficultyStat.textContent = `${level.difficulty} · ${Level.difficultyLabel(level.difficulty)}`;
-        els.startPosStat.textContent = `(${level.start[0]}, ${level.start[1]})`;
-        els.endPosStat.textContent = `(${level.end[0]}, ${level.end[1]})`;
-        els.layoutStat.textContent = level.parkingLayout === 'rows' ? 'Rows' : 'Columns';
+        setStat(els.gridSizeStat, `${level.width}×${level.height}`);
+        setStat(els.carCountStat, String(level.cars.length));
+        setStat(els.fillStat, Math.round((level.cars.length / total) * 100) + '%');
+        setStat(els.difficultyStat, `${level.difficulty} · ${Level.difficultyLabel(level.difficulty)}`);
+        setStat(els.startPosStat, `(${level.start[0]}, ${level.start[1]})`);
+        setStat(els.endPosStat, `(${level.end[0]}, ${level.end[1]})`);
+        setStat(els.layoutStat, level.parkingLayout === 'rows' ? 'Rows' : 'Columns');
 
         state.steps = Pathfinding.shortestPathLength(
             level, level.start, level.end, getSolver().workspace);
         const solvable = state.steps >= 0;
 
-        els.routeStat.textContent = solvable
+        setStat(els.routeStat, solvable
             ? `${state.steps} step${state.steps === 1 ? '' : 's'}`
-            : 'Blocked';
+            : 'Blocked');
         els.solvableStat.textContent = solvable ? 'Solvable' : 'Blocked';
         els.solvableBadge.classList.toggle('badge-ok', solvable);
         els.solvableBadge.classList.toggle('badge-bad', !solvable);
@@ -935,8 +1026,18 @@
         state.generating = on;
         els.levelForm.classList.toggle('loading', on);
         els.gridWrapper.classList.toggle('is-generating', on);
+        if (els.genProgress) els.genProgress.style.setProperty('--v', on ? 0 : 1);
         const submitBtn = els.levelForm.querySelector('button[type="submit"]');
         if (submitBtn) submitBtn.disabled = on;
+    }
+
+    /** Drive the veil's progress bar from the generator's progress callback. */
+    function reportProgress(fraction) {
+        const value = clamp(Number(fraction) || 0, 0, 1);
+        if (els.genProgress) els.genProgress.style.setProperty('--v', value.toFixed(3));
+        els.genVeilText.textContent = value >= 1
+            ? 'Preparing the lot…'
+            : `Generating level… ${Math.round(value * 100)}%`;
     }
 
     function generate() {
@@ -952,6 +1053,7 @@
         els.seed.value = seed;
         setGenerating(true);
         els.genVeilText.textContent = 'Generating level…';
+        announce('Generating a new level.');
 
         // Defer one tick so the loading state can paint before the work.
         global.setTimeout(() => {
@@ -959,16 +1061,14 @@
                 const next = Level.generateLevel(width, height, difficulty, seed, guaranteePath, {
                     route,
                     name,
-                    onProgress: (fraction) => {
-                        els.genVeilText.textContent =
-                            `Generating level… ${Math.round(fraction * 100)}%`;
-                    }
+                    onProgress: reportProgress
                 });
                 applyLevel(next, { resetHistory: true, fit: true });
                 const steps = state.steps;
-                toast('success', 'Level generated',
-                    `${next.width}×${next.height} · ${next.cars.length} cars · ` +
-                    `${steps >= 0 ? steps + ' step route' : 'blocked'} · seed “${seed}”`);
+                const summary = `${next.width}×${next.height} · ${next.cars.length} cars · ` +
+                    `${steps >= 0 ? steps + ' step route' : 'blocked'} · seed “${seed}”`;
+                toast('success', 'Level generated', summary);
+                announce(`Level generated. ${summary}`);
             } catch (err) {
                 console.error('Generation failed:', err);
                 toast('error', 'Generation failed', err.message || 'Unexpected error.');
@@ -1380,15 +1480,71 @@
 
     /* ------------------------------- Wiring ----------------------------- */
 
+    /**
+     * Highlight the section the reader is in and slide the rail's indicator.
+     * Runs inside the scroll frame below, so it never adds its own listener.
+     */
+    function updateSectionSpy() {
+        if (!els.mobileNav) return;
+        const links = els.mobileNav.querySelectorAll('a[data-target]');
+        if (!links.length) return;
+        const line = (global.innerHeight || 800) * 0.42;
+        let active = 0;
+        SECTIONS.forEach((id, index) => {
+            const section = global.document.getElementById(id);
+            if (!section) return;
+            const rect = section.getBoundingClientRect();
+            if (rect.height > 0 && rect.top <= line) active = index;
+        });
+        els.mobileNav.style.setProperty('--i', active);
+        links.forEach((link, index) => {
+            link.classList.toggle('is-active', index === active);
+            // The rail is a set of related targets, so the current one is
+            // marked for assistive tech as well as visually.
+            if (index === active) link.setAttribute('aria-current', 'true');
+            else link.removeAttribute('aria-current');
+        });
+    }
+
     function wireEvents() {
         // Theme.
         els.themeToggle.addEventListener('click', () =>
             applyTheme(state.theme === 'dark' ? 'light' : 'dark'));
 
-        // Header condenses as content scrolls underneath.
-        const onScroll = () => els.appHeader.classList.toggle('scrolled', global.scrollY > 6);
+        // Scroll work is coalesced into one animation frame: the header wash,
+        // the compact rail's hide-on-scroll and the section highlight.
+        let lastScroll = global.scrollY || 0;
+        let scrollQueued = false;
+        const onScrollFrame = () => {
+            scrollQueued = false;
+            const y = global.scrollY || 0;
+            els.appHeader.classList.toggle('scrolled', y > 6);
+            if (els.mobileNav) {
+                const tuck = y > 420 && y > lastScroll + 4;
+                const reveal = y < 420 || y < lastScroll - 4;
+                if (tuck) els.mobileNav.classList.add('is-hidden');
+                else if (reveal) els.mobileNav.classList.remove('is-hidden');
+                updateSectionSpy();
+            }
+            lastScroll = y;
+        };
+        const onScroll = () => {
+            if (scrollQueued) return;
+            scrollQueued = true;
+            raf(onScrollFrame);
+        };
         global.addEventListener('scroll', onScroll, { passive: true });
-        onScroll();
+        onScrollFrame();
+
+        // Jumping from the rail should feel immediate, before the smooth scroll
+        // has had time to catch up.
+        if (els.mobileNav) {
+            [...els.mobileNav.querySelectorAll('a[data-target]')].forEach((link, index) => {
+                link.addEventListener('click', () => {
+                    els.mobileNav.style.setProperty('--i', index);
+                });
+            });
+        }
 
         // Sliders + seed + name.
         ['width', 'height', 'difficulty'].forEach((k) =>
@@ -1414,6 +1570,12 @@
         Object.keys(MODE_BUTTONS).forEach((mode) =>
             els[MODE_BUTTONS[mode]].addEventListener('click', () => setEditMode(mode)));
         els.cancelModeBtn.addEventListener('click', () => setEditMode(null));
+        if (els.emptyAddCarBtn) {
+            els.emptyAddCarBtn.addEventListener('click', () => {
+                setEditMode('addCar');
+                els.gridContainer.focus();
+            });
+        }
         els.clearAllBtn.addEventListener('click', clearAll);
         els.resizeBtn.addEventListener('click', openResizeDialog);
         els.validateBtn.addEventListener('click', reportSolvability);
@@ -1483,6 +1645,7 @@
         els.zoomFit.addEventListener('click', fitZoom);
         global.addEventListener('resize', debounce(() => {
             if (state.fitMode) fitZoom();
+            if (els.mobileNav) updateSectionSpy();
         }, 150));
 
         // JSON panel.
@@ -1595,7 +1758,7 @@
         init,
         state,
         // Exposed for debugging from the console.
-        undo, redo, generate, exportJson, exportPng, copyShareLink, fitZoom
+        undo, redo, generate, exportJson, exportPng, copyShareLink, fitZoom, toast
     };
 
     if (global.document.readyState === 'loading') {

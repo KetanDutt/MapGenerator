@@ -20,7 +20,8 @@
  *   9. Image layout   — pure geometry for the PNG exporter
  *  10. Performance    — budgets that guard against accidental O(n²) work
  *  11. Wiring         — index.html ⇄ app.js ids, icon sprite, offline assets
- *  12. UI             — the real controller booted against a DOM stub
+ *  12. Design system  — token integrity, WCAG contrast, motion budgets
+ *  13. UI             — the real controller booted against a DOM stub
  *
  * Exits non-zero when any assertion fails, so it drops straight into CI.
  */
@@ -64,12 +65,26 @@ function report(name, err) {
     console.error(`  ✗ ${name}\n      ${err && err.message ? err.message : err}`);
 }
 
-function test(name, fn) {
+/**
+ * @param {string} name
+ * @param {Function} fn
+ * @param {object} [options] `{ deferred: true }` opts a UI test out of the
+ *   synchronous-only rule. Only safe when the test touches nothing that a later
+ *   `installDom()` replaces; prefer the fake clock (`doc.clock.advance`).
+ */
+function test(name, fn, options) {
     if (skipSuite) return;
     try {
         const result = fn();
-        // Async tests (promise-returning) are awaited before the summary.
+        // Promise-returning tests are awaited before the summary — which means
+        // a UI test's assertions would run after every other test has booted
+        // its own DOM stub. Those must stay synchronous.
         if (result && typeof result.then === 'function') {
+            if (suiteName === 'UI' && !(options && options.deferred)) {
+                throw new Error(
+                    'UI tests must be synchronous — drive promises with the fake clock ' +
+                    'instead of awaiting them (the DOM stub is shared across tests).');
+            }
             const owner = suiteName;
             pending.push(result.then(() => report(name, null), (err) => report(name, err))
                 .catch((err) => { suiteName = owner; report(name, err); }));
@@ -1014,6 +1029,15 @@ suite('Wiring');
 
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const appSource = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
+const FILES_CSS = fs.readdirSync(path.join(ROOT, 'css'))
+    .filter((f) => f.endsWith('.css'))
+    .map((f) => fs.readFileSync(path.join(ROOT, 'css', f), 'utf8'))
+    .join('\n');
+
+/* Every stylesheet the project ships, concatenated — the design system is split
+   across files (tokens/primitives, editor, docs) and a rule may live in any of
+   them. */
+const css = FILES_CSS;
 
 /** Ids declared anywhere in index.html. */
 const htmlIds = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
@@ -1024,6 +1048,102 @@ const cachedIds = new Set(cacheBlock ? [...cacheBlock[1].matchAll(/'([A-Za-z0-9_
 
 /** Every `els.foo` reference in app.js. */
 const elsRefs = new Set([...appSource.matchAll(/\bels\.([A-Za-z0-9_]+)/g)].map((m) => m[1]));
+
+function escapeForRegExp(text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Is there a rule for this class in any of the project's stylesheets? */
+function classHasRule(cls) {
+    const escaped = cls.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Matches `.name` as a whole class token (not `.name-2` / `.namespace`).
+    return new RegExp('\\.(?!\\d)' + escaped + '(?![\\w-])').test(css);
+}
+
+test('every element app.js caches exists in index.html', () => {
+    const missing = [...cachedIds].filter((id) => !htmlIds.has(id));
+    assertEqual(missing.length, 0, `index.html is missing: ${missing.join(', ')}`);
+});
+
+test('every els.* reference is cached on startup', () => {
+    const missing = [...elsRefs].filter((id) => !cachedIds.has(id));
+    assertEqual(missing.length, 0, `not in cacheEls(): ${missing.join(', ')}`);
+});
+
+const docsHtml = fs.readFileSync(path.join(ROOT, 'docs.html'), 'utf8');
+const docsSource = fs.readFileSync(path.join(ROOT, 'js/docs.js'), 'utf8');
+const docsHtmlIds = new Set([...docsHtml.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+
+test('every element the docs viewer caches exists in docs.html', () => {
+    // The cache list is one array of ids followed by a `forEach`, so the ids
+    // are read straight out of the module.
+    const cached = new Set();
+    [...docsSource.matchAll(/\[([^\]]*)\]\s*\n?\s*\.forEach\(\(id\)/g)].forEach((m) => {
+        [...m[1].matchAll(/'(\w+)'/g)].forEach((id) => cached.add(id[1]));
+    });
+    [...docsSource.matchAll(/'(themeToggle|doc\w+|toc\w+|copyLinkBtn|rawLink|errorRawLink|appHeader|toolbar[A-Za-z]*)'/g)]
+        .forEach((m) => cached.add(m[1]));
+
+    assert(cached.size >= 12, `expected the docs cache list, found ${cached.size} ids`);
+    const missing = [...cached].filter((id) => !docsHtmlIds.has(id));
+    assertEqual(missing.length, 0, `docs.html is missing: ${missing.join(', ')}`);
+});
+
+test('every element app.js caches exists in index.html', () => {
+    const allowList = new Set(['pageTitle', 'controlsTitle', 'sidebar', 'jsonDisplay', 'jsonContent',
+        'gridContainer', 'gridWrapper']);
+    const unused = [...htmlIds].filter((id) =>
+        !cachedIds.has(id) && !allowList.has(id) && !html.includes(`for="${id}"`) &&
+        !html.includes(`aria-labelledby="${id}"`) && !html.includes(`aria-controls="${id}"`) &&
+        !html.includes(`aria-describedby="${id}"`) && !html.includes(`href="#${id}"`));
+    assertEqual(unused.length, 0, `unused ids: ${unused.join(', ')}`);
+});
+
+test('local assets referenced by the HTML exist', () => {
+    const local = [...html.matchAll(/(?:href|src)="((?!https?:|data:|#)[^"]+)"/g)].map((m) => m[1]);
+    const missing = local.filter((rel) => !fs.existsSync(path.join(ROOT, rel.split('#')[0])));
+    assertEqual(missing.length, 0, `missing local assets: ${missing.join(', ')}`);
+});
+
+test('CSS classes toggled by app.js are defined in the stylesheets', () => {
+    const classes = new Set();
+    [...appSource.matchAll(/classList\.(?:add|remove|toggle)\('([^']+)'/g)]
+        .forEach((m) => m[1].split(/\s+/).forEach((c) => classes.add(c)));
+    [...appSource.matchAll(/className = '([^']+)'/g)]
+        .forEach((m) => m[1].split(/\s+/).forEach((c) => classes.add(c)));
+    [...appSource.matchAll(/className = `([^`$]+)`/g)]
+        .forEach((m) => m[1].split(/\s+/).forEach((c) => classes.add(c)));
+
+    const missing = [...classes].filter((cls) => !classHasRule(cls));
+    assertEqual(missing.length, 0, `no CSS rule for: ${missing.join(', ')}`);
+});
+
+test('every class used in the markup has a rule (design-system audit)', () => {
+    // Keeps the redesign honest: no component may rely on styles that were
+    // dropped, and no stray class may survive a refactor unnoticed.
+    const allowList = new Set(['icon', 'glass-1', 'glass-2', 'glass-3', 'd-none', 'sr-only', 'w-full']);
+    const candidates = [];
+
+    ['index.html', 'docs.html', 'js/app.js', 'js/docs.js', 'js/markdown.js'].forEach((file) => {
+        const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
+        [...source.matchAll(/class="([^"]+)"/g)].forEach((match) => {
+            // `class="tag-${level}"` is a prefix pattern, not a literal class.
+            const dynamic = match[1].indexOf('${') !== -1;
+            match[1].replace(/\$\{[^}]*\}/g, '').split(/\s+/).forEach((token) => {
+                if (/^[a-z][a-z0-9_-]*$/i.test(token)) candidates.push({ token, dynamic });
+            });
+        });
+    });
+
+    const missing = candidates
+        .filter((entry) => !allowList.has(entry.token))
+        .filter((entry) => (entry.dynamic
+            ? !new RegExp('\\.' + escapeForRegExp(entry.token)).test(css)
+            : !classHasRule(entry.token)))
+        .map((entry) => entry.token);
+
+    assertEqual(missing.length, 0, `unstyled classes: ${[...new Set(missing)].join(', ')}`);
+});
 
 test('every element app.js caches exists in index.html', () => {
     const missing = [...cachedIds].filter((id) => !htmlIds.has(id));
@@ -1051,26 +1171,17 @@ test('local assets referenced by the HTML exist', () => {
     assertEqual(missing.length, 0, `missing local assets: ${missing.join(', ')}`);
 });
 
-test('CSS classes toggled by app.js are defined in style.css', () => {
-    const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8');
+test('CSS classes toggled by app.js are defined in the stylesheets', () => {
     const classes = new Set();
     [...appSource.matchAll(/classList\.(?:add|remove|toggle)\('([^']+)'/g)]
         .forEach((m) => m[1].split(/\s+/).forEach((c) => classes.add(c)));
     [...appSource.matchAll(/className = '([^']+)'/g)]
         .forEach((m) => m[1].split(/\s+/).forEach((c) => classes.add(c)));
+    [...appSource.matchAll(/className = `([^`$]+)`/g)]
+        .forEach((m) => m[1].split(/\s+/).forEach((c) => classes.add(c)));
 
-    const missing = [...classes].filter((cls) => {
-        const escaped = cls.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        return !new RegExp('\\.' + escaped + '(?![\\w-])').test(css);
-    });
+    const missing = [...classes].filter((cls) => !classHasRule(cls));
     assertEqual(missing.length, 0, `no CSS rule for: ${missing.join(', ')}`);
-});
-
-test('stylesheets referenced by index.html are loaded in the right order', () => {
-    const sweetIndex = html.indexOf('sweetalert2');
-    const appIndex = html.indexOf('css/style.css');
-    assert(sweetIndex !== -1 && appIndex !== -1, 'both stylesheets referenced');
-    assert(sweetIndex < appIndex, 'the app stylesheet must load after SweetAlert2 to win overrides');
 });
 
 test('scripts load in dependency order', () => {
@@ -1153,6 +1264,140 @@ test('the documented difficulty ladder matches the implementation', () => {
 });
 
 /* --------------------------- 12. UI (DOM stub) --------------------------- */
+
+/* --------------------------- Design system ----------------------------- */
+
+suite('Design system');
+
+/**
+ * Read one rule block out of a stylesheet by its exact selector.
+ * @param {string} source
+ * @param {string} selector
+ * @returns {Record<string, string>} Custom properties declared in the block.
+ */
+function tokenBlock(source, selector) {
+    const start = source.indexOf(selector + ' {');
+    if (start === -1) return {};
+    const open = source.indexOf('{', start);
+    const close = source.indexOf('\n}', open);
+    const body = source.slice(open + 1, close);
+    const tokens = {};
+    [...body.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].forEach((m) => { tokens[m[1]] = m[2].trim(); });
+    return tokens;
+}
+
+/** `#rrggbb` or `rgb()/rgba()` → `[r, g, b, a]`. */
+function parseColor(value) {
+    const hex = /^#([0-9a-f]{6})$/i.exec(value.trim());
+    if (hex) {
+        const h = hex[1];
+        return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 1];
+    }
+    const rgb = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)$/.exec(value.trim());
+    if (rgb) return [+rgb[1], +rgb[2], +rgb[3], rgb[4] === undefined ? 1 : +rgb[4]];
+    return null;
+}
+
+/** Composite a translucent colour over an opaque one. */
+function over(fg, bg) {
+    const a = fg[3];
+    return [fg[0] * a + bg[0] * (1 - a), fg[1] * a + bg[1] * (1 - a), fg[2] * a + bg[2] * (1 - a), 1];
+}
+
+/** WCAG 2.1 relative luminance. */
+function luminance(color) {
+    const channel = (value) => {
+        const c = value / 255;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * channel(color[0]) + 0.7152 * channel(color[1]) + 0.0722 * channel(color[2]);
+}
+
+function contrastRatio(a, b) {
+    const la = luminance(a);
+    const lb = luminance(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+const ROOT_TOKENS = tokenBlock(css, ':root');
+const DARK_TOKENS = tokenBlock(css, '[data-theme="dark"]');
+
+test('every custom property referenced by CSS is defined or has a fallback', () => {
+    // A typo in a token name fails silently in a browser — here it fails the
+    // build. `--x` written at runtime is fine as long as the rule has a
+    // fallback, which is what the second pattern checks.
+    // Any `--token:` declaration counts, wherever it lives (a component may
+    // scope a token to itself, like `--fill` on the range input).
+    const defined = new Set([...Object.keys(ROOT_TOKENS), ...Object.keys(DARK_TOKENS)]);
+    [...css.matchAll(/(--[a-z0-9-]+):\s*[^;]+;/g)].forEach((m) => defined.add(m[1]));
+
+    const missing = [];
+    [...css.matchAll(/var\(\s*(--[a-z0-9-]+)\s*([,)])/g)].forEach((m) => {
+        if (m[2] === ')' && !defined.has(m[1])) missing.push(m[1]);
+    });
+    assertEqual([...new Set(missing)].length, 0, `undefined tokens: ${[...new Set(missing)].join(', ')}`);
+});
+
+test('custom properties written by JS are consumed by a rule', () => {
+    const written = new Set();
+    [...appSource.matchAll(/setProperty\('(--[a-z0-9-]+)'/g)].forEach((m) => written.add(m[1]));
+    assert(written.size >= 5, `app.js should drive several custom properties, found ${written.size}`);
+
+    const unused = [...written].filter((token) => css.indexOf('var(' + token) === -1);
+    assertEqual(unused.length, 0, `nothing reads: ${unused.join(', ')}`);
+});
+
+test('the dark theme only overrides tokens the light theme declares', () => {
+    const orphans = Object.keys(DARK_TOKENS).filter((token) => !(token in ROOT_TOKENS));
+    assertEqual(orphans.length, 0, `dark-only tokens: ${orphans.join(', ')}`);
+});
+
+test('text, links and tinted ink clear WCAG AA on their surfaces', () => {
+    // The design system promises opaque, readable ink over translucent
+    // surfaces; this is that promise, checked instead of assumed.
+    const pairs = [
+        ['--text-1', '--glass-strong-bg'], ['--text-2', '--glass-strong-bg'],
+        ['--text-3', '--glass-strong-bg'], ['--text-3', '--glass-surface-bg'],
+        ['--accent-1', '--glass-strong-bg'], ['--accent-2', '--glass-surface-bg']
+    ];
+    const tinted = [
+        ['--success-ink', '--success-soft'], ['--danger-ink', '--danger-soft'],
+        ['--warning-ink', '--warning-soft'], ['--accent-2', '--accent-soft']
+    ];
+
+    [{ name: 'light', tokens: ROOT_TOKENS }, { name: 'dark', tokens: DARK_TOKENS }].forEach((theme) => {
+        const wash = parseColor(theme.tokens['--bg-0']);
+        assert(wash, `${theme.name} theme declares --bg-0`);
+
+        pairs.forEach(([ink, surface]) => {
+            const glass = over(parseColor(theme.tokens[surface]), wash);
+            const ratio = contrastRatio(parseColor(theme.tokens[ink]), glass);
+            assert(ratio >= 4.5,
+                `${theme.name}: ${ink} on ${surface} is ${ratio.toFixed(2)}:1 (needs 4.5:1)`);
+        });
+
+        tinted.forEach(([ink, tint]) => {
+            // Tints stack on the brightest glass, which is the worst case.
+            const glass = over(parseColor(theme.tokens['--glass-strong-bg']), wash);
+            const chip = over(parseColor(theme.tokens[tint]), glass);
+            const ratio = contrastRatio(parseColor(theme.tokens[ink]), chip);
+            assert(ratio >= 4.5,
+                `${theme.name}: ${ink} on ${tint} is ${ratio.toFixed(2)}:1 (needs 4.5:1)`);
+        });
+
+        const onAccent = contrastRatio(parseColor(theme.tokens['--accent-ink']), parseColor(theme.tokens['--accent-1']));
+        assert(onAccent >= 4.5, `${theme.name}: primary button label is ${onAccent.toFixed(2)}:1`);
+    });
+});
+
+test('duration bands stay inside the documented budgets', () => {
+    const ms = (token) => Number(String(ROOT_TOKENS[token]).replace(/[^\d.]/g, ''));
+    const bands = [['--dur-1', 120, 200], ['--dur-2', 200, 350], ['--dur-3', 200, 350], ['--dur-4', 300, 500]];
+    bands.forEach(([token, min, max]) => {
+        const value = ms(token);
+        assert(value >= min && value <= max, `${token} is ${value}ms, expected ${min}–${max}ms`);
+    });
+});
 
 suite('UI');
 
@@ -1484,12 +1729,13 @@ test('the canvas encoder resolves a PNG blob', () => {
     bootUi();
     const canvas = PG.Image.renderLevelToCanvas(PG.App.state.level, {});
     assert(canvas, 'a canvas is available in the stub');
-    // Deliberately awaited: promises given to later-installed DOM stubs must not
-    // be able to clobber the globals this call depends on.
+    // `deferred`: the encoder is a promise API and the blob is the assertion.
+    // Safe because the canvas and its encoder are captured by value here — no
+    // later test can change what this callback sees.
     return PG.Image.canvasToBlob(canvas).then((blob) => {
         assertEqual(blob.type, 'image/png', 'encoded as PNG');
     });
-});
+}, { deferred: true });
 
 test('the JSON panel collapses without losing the level', () => {
     const doc = bootUi();
@@ -1501,6 +1747,133 @@ test('the JSON panel collapses without losing the level', () => {
     doc.clock.advance(60);
     assert(!doc.getElementById('jsonDisplay').classList.contains('d-none'), 'panel visible again');
     assert(doc.getElementById('jsonContent').textContent.includes('"width"'), 'the document came back');
+});
+
+test('notifications render as glass toasts in the host', () => {
+    const doc = bootUi();
+    const host = doc.getElementById('toastHost');
+    assert(host, 'the toast host exists');
+    assertEqual(host.children.length, 0, 'no toasts at boot');
+
+    PG.App.toast('success', 'Level generated', '10×10 · 20 cars');
+    doc.clock.advance(30);
+
+    assertEqual(host.children.length, 1, 'the toast was appended');
+    const toast = host.children[0];
+    assert(/\btoast\b/.test(toast.className), 'toast class applied');
+    assert(/toast--success/.test(toast.className), 'tone class applied');
+    assert(/glass-3/.test(toast.className), 'uses the floating glass material');
+    assert(toast.querySelector('.toast__bar'), 'a progress bar is present');
+    assert((toast.textContent || '').includes('20 cars'), 'the message is rendered');
+    assert(toast.querySelector('[data-x]') === null, 'no stray markup');
+
+    // Auto-dismiss removes the node again.
+    doc.clock.advance(4000 + 300);
+    assertEqual(host.children.length, 0, 'the toast dismissed itself');
+});
+
+test('duplicate notifications are suppressed, old ones are evicted', () => {
+    const doc = bootUi();
+    const host = doc.getElementById('toastHost');
+    PG.App.toast('info', 'Same', 'message');
+    PG.App.toast('info', 'Same', 'message');
+    doc.clock.advance(10);
+    assertEqual(host.children.length, 1, 'identical toasts are deduped');
+
+    for (let i = 0; i < 6; i++) PG.App.toast('info', 'Note ' + i, 'body ' + i);
+    doc.clock.advance(10);
+    assert(host.children.length <= 4, `at most four toasts stack, got ${host.children.length}`);
+});
+
+test('generation shows determinate progress on the veil', () => {
+    const doc = bootUi();
+    doc.getElementById('width').value = '12';
+    doc.getElementById('height').value = '12';
+    doc.getElementById('levelForm').fire('submit', {});
+
+    const veil = doc.getElementById('gridWrapper').parentNode.querySelector('.gen-veil');
+    assert(veil, 'the generation veil exists');
+    assert(doc.getElementById('gridWrapper').classList.contains('is-generating'), 'the veil is shown');
+    const bar = doc.getElementById('genProgress');
+    assert(bar, 'the progress bar exists');
+
+    doc.clock.advance(400);
+    assert(!doc.getElementById('gridWrapper').classList.contains('is-generating'), 'the veil cleared');
+    assertEqual(PG.App.state.level.width, 12, 'the level was generated');
+});
+
+test('the empty-lot state offers a working action', () => {
+    // Boot straight into an empty lot through a share link: every dialog in the
+    // app is promise-based, so this keeps the assertion synchronous.
+    const empty = {
+        width: 8, height: 6, difficulty: 5, seed: 'empty', name: 'Empty lot',
+        routeMode: 'direct', guaranteePath: true, parkingLayout: 'rows',
+        cars: [], start: [0, 0], end: [7, 5]
+    };
+    const doc = bootUi({ location: { search: '?level=' + encodeURIComponent(Share.encodeLevel(empty)) } });
+
+    const wrapper = doc.getElementById('gridWrapper');
+    assertEqual(PG.App.state.level.cars.length, 0, 'the lot is empty');
+    assert(wrapper.classList.contains('is-empty'), 'the empty-lot state is revealed');
+
+    doc.getElementById('emptyAddCarBtn').click();
+    assertEqual(PG.App.state.editMode, 'addCar', 'the button selects the add-car tool');
+    assert(doc.getElementById('addCarBtn').classList.contains('active'),
+        'the tool list reflects the selection');
+
+    // …and it is wired to the board: the very next click places a car.
+    findCell(doc, isFree).emit('mousedown', {});
+    doc.clock.advance(30);
+    assertEqual(carCount(doc), 1, 'the suggested action leads straight to placing a car');
+    assert(!wrapper.classList.contains('is-empty'), 'the empty state retires itself');
+});
+
+test('the compact rail tracks the section in view', () => {
+    const doc = bootUi();
+    const rail = doc.getElementById('mobileNav');
+    assert(rail, 'the rail exists');
+    const links = rail.querySelectorAll('a[data-target]');
+    assertEqual(links.length, 4, 'four section links');
+    links.forEach((link) => {
+        assert(doc.getElementById(link.dataset.target), 'every link targets a real section');
+    });
+
+    assertEqual(rail.querySelectorAll('.mobile-nav__ind').length, 1, 'one sliding indicator');
+    doc.fire('scroll');
+    doc.clock.advance(40);
+    const active = links.filter((link) => link.classList.contains('is-active'));
+    // The DOM stub reports every element at the same position, so exactly one
+    // link must win — never zero, never all four.
+    assertEqual(active.length, 1, 'exactly one section is highlighted');
+    assert(rail.style.getPropertyValue('--i') !== '', 'the indicator position is set');
+});
+
+test('stat values follow the model and nudge only when they change', () => {
+    const doc = bootUi();
+    const size = doc.getElementById('gridSizeStat');
+
+    doc.getElementById('width').value = '14';
+    doc.getElementById('height').value = '9';
+    doc.getElementById('levelForm').fire('submit', {});
+    doc.clock.advance(400);
+    assertEqual(size.textContent, '14×9', 'the stat follows the model');
+    assert(/\bbump(-alt)?\b/.test(size.className), 'a changed value is nudged');
+
+    size.classList.remove('bump', 'bump-alt');
+    doc.getElementById('validateBtn').click();
+    doc.clock.advance(60);
+    assert(!/\bbump(-alt)?\b/.test(size.className), 'an unchanged value is left alone');
+
+    // Changing it again alternates the animation name, which restarts the
+    // nudge without the layout-forcing reflow trick.
+    doc.getElementById('levelForm').fire('submit', {});
+    doc.clock.advance(400);
+    size.classList.remove('bump', 'bump-alt');
+    doc.getElementById('width').value = '16';
+    doc.getElementById('levelForm').fire('submit', {});
+    doc.clock.advance(400);
+    assertEqual(size.textContent, '16×9', 'the second change lands');
+    assert(/\bbump(-alt)?\b/.test(size.className), 'the nudge can run again');
 });
 
 test('edits are grouped, persisted and never outlive the undo limit', () => {

@@ -1,7 +1,7 @@
 # Architecture
 
 The app is a small set of dependency-free vanilla-JS modules plus a
-self-contained "Liquid Glass" CSS design system, an inline SVG icon sprite and a
+self-contained glass CSS design system, an inline SVG icon sprite and a
 **vendored** (but optional) SweetAlert2 dialog layer. There is **no build step**
 and **no network access**: each script attaches its public API to a shared
 `globalThis.ParkingGen` namespace, and the HTML pages load them in dependency
@@ -10,7 +10,7 @@ order.
 ```
 index.html                          docs.html
    │  css: vendor/sweetalert2,      │  css: style.css, docs.css
-   │       css/style.css            │
+   │       style.css, editor.css    │
    │  js:  vendor/… (optional),     │  js:  icons.js, markdown.js,
    │       icons.js, rng.js,        │       docs.js
    │       pathfinding.js, level.js,│
@@ -159,7 +159,9 @@ The documentation browser: lists every document, renders it with the Markdown
 module, builds a table of contents, filters the list, and shares the theme
 preference with the editor through `localStorage`. Documents are fetched from
 the repository (never duplicated), with an XHR fallback and a clear message when
-`file://` blocks `fetch`.
+`file://` blocks `fetch`. While a document is in flight the body shows a
+skeleton shaped like the finished article (`aria-busy` on `#docBody`), so the
+layout does not jump when the content lands.
 
 ### `js/app.js` — editor controller
 
@@ -188,18 +190,41 @@ Internals are grouped into sections:
 - **I/O** — file picker, whole-window drag & drop, JSON export/copy (with a
   grid-matrix toggle), PNG export, share-link copy, clipboard fallbacks, and a
   repair report for loaded files.
+- **Notifications** — `toast()` renders into `#toastHost` (floating glass,
+  stacked, auto-dismissing, deduped) instead of SweetAlert2, which stays in
+  charge of modals where focus trapping matters. Screen-reader output goes
+  through the single `#liveRegion`, so assistive tech never hears the same
+  change twice.
+- **Mobile rail** — the scroll handler is coalesced into one animation frame and
+  drives the header wash, the rail's hide-on-scroll and a section spy that moves
+  the rail's indicator.
 
-### `css/style.css` + `css/docs.css`
+### `css/style.css` + `css/editor.css` + `css/docs.css`
 
-A self-contained **Liquid Glass** design system (no CSS framework). A
-centralized token block on `:root` — and its override under
-`[data-theme="dark"]` — defines colour, four glass-material strengths, blur
-levels, radii, shadows, spacing, motion (durations + easing) and z-index layers;
-every component is built from those tokens. The grid uses
-`grid-template-columns: repeat(var(--cols), var(--cell-size))`, and car arrows
-are pure CSS triangles sized off `var(--cell-size)`, so zoom never distorts
-them. Motion is CSS-only (transform/opacity, GPU-friendly) and honours
-`prefers-reduced-motion`. See [DESIGN.md](DESIGN.md).
+A self-contained glass design system (no CSS framework, no preprocessor):
+
+- **`css/style.css`** holds the tokens (`:root` plus the `[data-theme="dark"]`
+  override): colour, glass materials, blur levels, radii, shadows, spacing,
+  type scale, motion bands, easing, z-index layers — then the reset, the
+  background field, the shared primitives (buttons, fields, header, footer,
+  dialogs, toasts), utilities and the reduced-motion/print rules.
+- **`css/editor.css`** and **`css/docs.css`** add the two page surfaces, using
+  only those tokens. Both load after `style.css`, so either page can restyle a
+  shared primitive without touching the other.
+- **Four materials, tiered by role** (`.glass-1` navigation/dialogs,
+  `.glass-2` panels, `.glass-3` floating surfaces, plus the quieter
+  `--glass-panel-*` tier for the board), each a single backdrop-filter layer —
+  no nested blur stacks, no animated filters.
+- **Opaque ink.** Blur and tint only ever apply to surfaces; text uses tokens
+  that are contrast-checked against the glass they sit on, and tinted chips use
+  dedicated `-ink` colours. `prefers-reduced-transparency` and the
+  `@supports not (backdrop-filter)` fallback both raise surface opacity.
+- The grid uses `grid-template-columns: repeat(var(--cols), var(--cell-size))`,
+  and car arrows are pure CSS triangles sized off `var(--cell-size)`, so zoom
+  never distorts them. Motion is CSS-only (transform/opacity, GPU-friendly),
+  staged in four duration bands, and honours `prefers-reduced-motion`.
+
+See [DESIGN.md](DESIGN.md) for the full token and component reference.
 
 ## Data flow
 

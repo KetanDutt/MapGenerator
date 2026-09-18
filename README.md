@@ -6,7 +6,7 @@ with cars (obstacles), a start cell and an exit cell — and can guarantee that
 every generated level is solvable. Levels are exported as plain JSON that your
 game engine can load directly, as a shareable link, or as a PNG mock-up.
 
-![Tech](https://img.shields.io/badge/HTML-Vanilla_JS-blue) ![No build](https://img.shields.io/badge/build-none-success) ![Deps](https://img.shields.io/badge/runtime%20dependencies-0-success) ![Offline](https://img.shields.io/badge/network-0%20requests-success) ![Tests](https://img.shields.io/badge/tests-101%20assertions-success) ![License](https://img.shields.io/badge/license-MIT-informational)
+![Tech](https://img.shields.io/badge/HTML-Vanilla_JS-blue) ![No build](https://img.shields.io/badge/build-none-success) ![Deps](https://img.shields.io/badge/runtime%20dependencies-0-success) ![Offline](https://img.shields.io/badge/network-0%20requests-success) ![Tests](https://img.shields.io/badge/tests-118%20assertions-success) ![License](https://img.shields.io/badge/license-MIT-informational)
 
 ---
 
@@ -28,7 +28,8 @@ game engine can load directly, as a shareable link, or as a PNG mock-up.
 | **Sharing** | Compact share codes restore the *exact* level — including hand edits |
 | **Zoom** | Zoom in / out / fit for grids up to 60×60, with auto re-fit on resize |
 | **Keyboard** | Full arrow-key grid navigation plus shortcuts for every common action |
-| **UX** | Dark / light theme, toasts, session restore, accessible dialogs, `prefers-reduced-motion` support |
+| **Interface** | One glass design system across both pages: layered translucent materials, a floating scroll-reactive header, a compact mobile rail, animated dialogs and toasts, skeleton loading and a first-class dark theme |
+| **UX** | Session restore, accessible dialogs, floating toast notifications, contrast-checked palettes, `prefers-reduced-motion` and `prefers-reduced-transparency` support |
 | **Offline-first** | No CDN, no trackers, no network: icons ship as an inline SVG sprite and dialogs as a vendored, optional library — `file://` works out of the box |
 | **Accessible** | Keyboard-navigable grid, focus rings, live-region announcements, `prefers-reduced-motion` support |
 
@@ -108,8 +109,9 @@ MapGenerator/
 ├── index.html            # Level editor (markup + local stylesheets/scripts)
 ├── docs.html             # In-app documentation browser
 ├── css/
-│   ├── style.css         # Liquid Glass design system: tokens, materials, components,
-│   │                     #   grid, sidebar, responsive rules, reduced-motion fallbacks
+│   ├── style.css         # Design system: tokens, background field, glass materials,
+│   │                     #   shared controls, dialogs, toasts, motion, accessibility
+│   ├── editor.css        # Level editor surface: panels, board, tools, stats, JSON
 │   └── docs.css          # Documentation viewer shell + Markdown typography
 ├── js/
 │   ├── icons.js          # Icon set as an inline SVG sprite (no icon font, no CDN)
@@ -122,7 +124,7 @@ MapGenerator/
 │   ├── app.js            # Editor controller (render, edit, history, import/export)
 │   └── docs.js           # Documentation browser controller
 ├── tools/
-│   ├── test.js           # Test suite (101 assertions, no dependencies)
+│   ├── test.js           # Test suite (118 assertions, no dependencies)
 │   ├── dom-stub.js       # Minimal DOM/browser stub the UI suite boots the app in
 │   ├── load-modules.js   # Loads the browser modules into Node for testing
 │   └── serve.js          # Zero-dependency static dev server
@@ -133,7 +135,7 @@ MapGenerator/
 │   ├── USAGE.md          # End-to-end usage guide
 │   ├── LEVEL_FORMAT.md   # The JSON level schema
 │   ├── ARCHITECTURE.md   # Code architecture and data flow
-│   ├── DESIGN.md         # Design system reference (tokens, glass, motion)
+│   ├── DESIGN.md         # Design system reference (layers, tokens, materials, motion)
 │   ├── TESTING.md        # What the suite covers and how to extend it
 │   ├── CONTRIBUTING.md   # Conventions, workflow, review checklist
 │   └── CHANGELOG.md      # Release history
@@ -162,10 +164,12 @@ layout maths, performance budgets, and the HTML ⇄ JS ⇄ CSS wiring.
 
 It also **boots the real app** inside a ~300-line DOM stub (`tools/dom-stub.js`)
 and drives it end to end: painting cars, drag strokes, undo/redo, the route
-overlay, keyboard navigation, generation, drag-and-drop loading, share links,
-theme persistence, clipboard and exports. That is the closest thing to a browser
-test we can run with zero dependencies. The suite exits non-zero on failure, so
-it drops straight into CI.
+overlay, keyboard navigation, generation (veil + progress), drag-and-drop
+loading, share links, the empty-lot state, the compact rail, the notification
+stack, theme persistence, clipboard and exports. That is the closest thing to a
+browser test we can run with zero dependencies, and it stops anyone shipping a
+class that no stylesheet defines — the same suite audits the markup against the
+design system. The suite exits non-zero on failure, so it drops straight into CI.
 
 ## 📖 Documentation
 
@@ -183,17 +187,20 @@ table of contents and a search box (`npm run serve`, then open `/docs.html`).
 ## 🛠️ Tech notes
 
 - **No bundler / framework for app code** — vanilla JS in small, documented files.
-- **No CSS framework** — the UI is a self-contained "Liquid Glass" design system
-  (`css/style.css`): centralized design tokens (colour, glass opacity, blur,
-  radii, shadows, spacing, motion), four glass material strengths, and
-  first-class light/dark themes. Motion is CSS-only (transform/opacity),
-  GPU-friendly, and honours `prefers-reduced-motion`.
+- **No CSS framework** — the UI is a self-contained design system
+  (`css/style.css` + `css/editor.css` + `css/docs.css`): centralized tokens
+  (colour, glass opacity, blur, radii, shadows, spacing, type, motion, depth),
+  tiered glass materials, and a first-class dark theme. Text is never
+  translucent, contrast is checked per surface, and motion is CSS-only
+  (transform/opacity), GPU-friendly, and honours `prefers-reduced-motion` and
+  `prefers-reduced-transparency`. See [docs/DESIGN.md](docs/DESIGN.md).
 - **No runtime dependencies, no network.** Icons are an inline SVG sprite
-  (`js/icons.js`, Font Awesome Free artwork, CC BY 4.0); dialogs and toasts use
-  SweetAlert2 **vendored** in `vendor/` (MIT). Nothing is fetched at runtime, so
+  (`js/icons.js`, Font Awesome Free artwork, CC BY 4.0); modals use SweetAlert2
+  **vendored** in `vendor/` (MIT) — notifications are the app's own DOM. Nothing
+  is fetched at runtime, so
   the editor works offline, behind a firewall and straight from `file://`. If
   `vendor/` is deleted the app still runs — dialogs fall back to native
-  `alert`/`confirm`/`console`. See [vendor/README.md](vendor/README.md).
+  `alert`/`confirm`, and toasts to the console. See [vendor/README.md](vendor/README.md).
 - **Deterministic randomness** is self-contained in `js/rng.js` (no external
   seedrandom dependency).
 - **Performance**: BFS runs on reusable typed-array workspaces, view updates

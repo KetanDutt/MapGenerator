@@ -44,8 +44,11 @@ the manual release checklist.
 - **Performance**: search with the reusable workspaces from
   `Pathfinding.createWorkspace`/`createSolver`, and route DOM/JSON updates
   through `scheduleViewSync()` — never do heavy work inside a pointer handler.
-- Keep all theme colours and sizes in CSS variables in `css/style.css`, and add
-  a rule for any class JS toggles (the test suite enforces this).
+- Keep all theme colours, sizes, durations and blur levels as tokens in
+  `css/style.css` (page-specific rules go in `css/editor.css` or
+  `css/docs.css`), and add a rule for any class JS toggles — the test suite
+  fails on a JS-toggled class *and* on a class used in markup that no stylesheet
+  defines.
 - Match the existing code style: `'use strict'`, `const`/`let`, JSDoc comments
   on public functions, small focused functions, comments that explain *why*.
 
@@ -82,8 +85,10 @@ the manual release checklist.
 - **Renderer targets** — `js/image.js` is deliberately split into pure geometry
   (`computeLayout`) and canvas drawing; an SVG or Tiled exporter can reuse the
   first and swap the second.
-- **UI surfaces** — the design tokens in `css/style.css` cover colour, glass,
-  motion and geometry; see [DESIGN.md](DESIGN.md) before inventing new values.
+- **UI surfaces** — the tokens in `css/style.css` cover colour, glass, motion,
+  depth and geometry, and the three stylesheets split shared primitives from the
+  two page surfaces; see [DESIGN.md](DESIGN.md) before inventing new values, and
+  reuse an existing material/radius/duration band rather than adding one.
 
 ## Commit and review notes
 
@@ -91,8 +96,8 @@ the manual release checklist.
   over `fix stuff`.
 - In the PR description, include the seed/settings you tested with (or a share
   link) — they make level-generation changes reproducible.
-- Screenshots are welcome for UI changes; a PNG export from the app is a handy
-  before/after artefact.
+- Screenshots are welcome for UI changes (light **and** dark, plus a narrow
+  viewport); a PNG export from the app is a handy before/after artefact.
 
 ## Filing issues
 

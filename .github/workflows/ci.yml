@@ -34,14 +34,15 @@ jobs:
           const required = [
             'js/icons.js', 'js/rng.js', 'js/pathfinding.js', 'js/level.js',
             'js/share.js', 'js/image.js', 'js/app.js',
-            'css/style.css', 'vendor/sweetalert2/sweetalert2.min.js',
+            'css/style.css', 'css/editor.css', 'vendor/sweetalert2/sweetalert2.min.js',
             'vendor/sweetalert2/sweetalert2.min.css'
           ];
           required.forEach((file) => {
             if (!html.includes(file)) throw new Error('index.html does not reference ' + file);
             if (!fs.existsSync(file)) throw new Error('missing file: ' + file);
           });
-          ['docs.html', 'docs/USAGE.md', 'docs/ARCHITECTURE.md', 'LICENSE'].forEach((file) => {
+          ['docs.html', 'css/docs.css', 'js/docs.js', 'js/icons.js', 'js/markdown.js',
+            'docs/USAGE.md', 'docs/ARCHITECTURE.md', 'docs/DESIGN.md', 'LICENSE'].forEach((file) => {
             if (!fs.existsSync(file)) throw new Error('missing file: ' + file);
           });
           console.log('App shell OK — ' + required.length + ' assets present');

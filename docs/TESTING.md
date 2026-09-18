@@ -10,8 +10,10 @@ node tools/test.js --filter=share # one suite (substring match on the name)
 node tools/test.js --quiet        # failures + summary only
 ```
 
-Exit code is non-zero when any assertion fails, so CI can call it directly
-(see `.github/workflows/ci.yml`, which runs it on Node 18, 20 and 22).
+Exit code is non-zero when any case fails, so CI can call it directly (see
+`.github/workflows/ci.yml`, which runs it on Node 18, 20 and 22). Output is
+quoted as “assertions” — the project's shorthand for one `test(...)` case, each
+of which contains its own `assert`/`assertEqual` calls.
 
 ## What is covered
 
@@ -27,14 +29,22 @@ Exit code is non-zero when any assertion fails, so CI can call it directly
 | **Markdown** | Heading slugs, inline formatting, tables/nested lists/quotes/fences, XSS escaping, and every real document in `docs/` renders balanced |
 | **Image layout** | Canvas geometry maths, option clamping, graceful degradation without a DOM |
 | **Performance** | 60×60 generation budget, average search time, heap growth over 400 searches (guards against per-search allocations), large-file sanitisation budget |
-| **Wiring** | Every id `app.js` caches exists in `index.html`, every `els.*` reference is cached, no unused ids, local assets exist, no remote (`http(s)`) asset references, every `<use href="#i-…">` resolves to an icon sprite symbol, CSS classes toggled from JS are defined, stylesheet/script order, and the sibling order the CSS state selectors rely on |
-| **UI** | The real `app.js` booted in `tools/dom-stub.js`: initial render, icon mount, painting, drag strokes as one undo step, undo/redo, route overlay geometry, keyboard cursor + tools, Escape, form generation, drag-and-drop loading, blocked levels, theme persistence, clipboard, share-link boot, exports, JSON panel, session saving |
+| **Design system** | Every `var(--token)` resolves to a declaration or carries a fallback, every custom property written by `app.js` is read by a rule, the dark theme only overrides tokens the light theme declares, text/links/tinted-chip ink clear WCAG AA (4.5:1) on their real surfaces in both themes, and the motion durations stay inside their documented 120–200 / 200–350 / 300–500 ms bands |
+| **Wiring** | Every id `app.js` caches exists in `index.html`, every `els.*` reference is cached, no unused ids, local assets exist, no remote (`http(s)`) asset references, every `<use href="#i-…">` resolves to an icon sprite symbol, CSS classes toggled from JS are defined, **every class used in the markup has a stylesheet rule** (the design-system audit), stylesheet/script order, and the sibling order the CSS state selectors rely on |
+| **UI** | The real `app.js` booted in `tools/dom-stub.js`: initial render, icon mount, painting, drag strokes as one undo step, undo/redo, route overlay geometry, keyboard cursor + tools, Escape, form generation (veil + progress bar), the empty-lot state and its action, the compact section rail, glass toasts (dedupe, eviction, auto-dismiss), stat nudges, drag-and-drop loading, blocked levels, theme persistence, clipboard, share-link boot, exports, JSON panel, session saving |
+
+The **design system** suite is what keeps the interface honest as it grows: the
+palette, the token graph and the motion budgets are asserted rather than
+documented, so a re-tuned colour or a renamed token cannot quietly break
+contrast or leave a component unstyled.
 
 The **wiring** suite deserves a note: it is the cheapest possible integration
-test for a zero-build project. It parses `index.html`, `js/app.js` and
-`css/style.css` and fails on typos that would otherwise only show up as a blank
-page in a browser — and it fails if anyone reintroduces a CDN link or an icon
-that does not exist.
+test for a zero-build project. It parses `index.html`, `docs.html`, `js/app.js`,
+`js/docs.js` and every file in `css/`, and fails on typos that would otherwise
+only show up as a blank page in a browser — it fails if anyone reintroduces a CDN
+link, references an icon that does not exist, toggles a class from JS that no
+stylesheet defines, or leaves a class in the markup with no rule behind it
+(which is how the design system stays honest as it grows).
 
 The **UI** suite is the other half: `tools/dom-stub.js` is a ~300-line
 implementation of the DOM surface the controller uses (element tree, attributes,
@@ -59,6 +69,15 @@ test('does the thing', () => {
 // Promise-returning tests are awaited before the summary is printed.
 test('async things too', () => Promise.resolve().then(() => assert(true)));
 ```
+
+**Keep UI tests synchronous.** Promise-returning tests are collected and awaited
+just before the summary — by which point every other test has booted its own DOM
+stub, so assertions that resume after an `await` would be reading a different
+page. The UI suite therefore drives deferred work with the fake clock
+(`doc.clock.advance(ms)`) instead of awaiting it, and the harness rejects async
+UI tests unless a test explicitly opts out with `{ deferred: true }` (used only
+by the canvas encoder, which captures everything it needs before its promise
+settles).
 
 Available helpers: `suite`, `test`, `assert`, `assertEqual`, `assertClose`,
 `assertDeepEqual`, `assertThrows`, `fail`. Anything you add to

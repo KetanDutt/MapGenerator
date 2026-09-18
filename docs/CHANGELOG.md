@@ -7,7 +7,13 @@ semantic versioning.
 ## [2.0.0] — Unreleased
 
 A production-hardening pass: bug fixes, a faster and more capable generator,
-new editor features, an accessibility layer, documentation and CI.
+new editor features, an accessibility layer, documentation and CI. It closes
+with a **full interface pass** — one glass design system across both pages, an
+in-app notification layer, and a layout built for phones rather than shrunk down
+to them. No behaviour, API, route, data or user flow changed, and the suite grew
+from 101 to 118 assertions (the one existing assertion that read
+`css/style.css` now reads all three stylesheets, since a rule may live in any of
+them).
 
 ### ⚠️ Behaviour changes
 
@@ -110,6 +116,42 @@ new editor features, an accessibility layer, documentation and CI.
   CONTRIBUTING plus new DESIGN.md, TESTING.md and this changelog, and an
   in-app browser (`docs.html`) that renders every document with a table of
   contents and a filter box.
+- **One design system across both pages** — `css/style.css` (tokens,
+  materials, shared primitives) plus `css/editor.css` and `css/docs.css` for the
+  two surfaces. Every colour, radius, blur, shadow, duration, easing and z-index
+  is a token; nothing is hard-coded per component.
+- **Four glass materials** (navigation/dialogs, panels, floating surfaces, and a
+  quieter tier for the board) with per-tier blur, saturation, inner highlight
+  and ambient shadow, plus opaque fallbacks for
+  `prefers-reduced-transparency: reduce` and browsers without
+  `backdrop-filter`.
+- **In-app toast layer** — notifications render into `#toastHost` as floating
+  glass cards (stacked, deduped, auto-dismissing, hover-pauses the countdown,
+  dismissible, announced through the toast host). SweetAlert2 keeps the modals,
+  where focus trapping matters.
+- **Determinate generation progress** — the veil shows a progress bar fed by the
+  generator's `onProgress` callback instead of an indeterminate spinner.
+- **Compact mobile rail** — a bottom navigation bar (small screens only) that
+  hides while scrolling down, returns on scroll up, and highlights the section
+  in view with a single sliding indicator.
+- **Actionable empty state** — the empty-lot hint now offers a button that
+  selects the add-car tool and puts the cursor on the board.
+- **Live stat nudges** — stat values animate only when the underlying value
+  actually changes.
+- **Documentation skeleton** — the docs viewer shows a block-shaped loading
+  placeholder that matches the article it is about to render.
+- **Contrast-checked tint ink** — `--*-ink` tokens for text on tinted surfaces,
+  so success/warning/danger chips clear WCAG AA on their own tint in both
+  themes, not just on the page.
+- **A design-system suite** — token references are resolved (a typo in a token
+  name now fails the build instead of silently styling nothing), every custom
+  property JS writes must be read by a rule, the dark theme may only override
+  tokens the light theme declares, text and tinted-chip ink are checked against
+  WCAG AA on their real surfaces in both themes, and the motion durations must
+  stay inside their documented bands.
+- **Two more guards** — every class used in markup must have a stylesheet rule
+  (design-system audit), and UI tests may not be asynchronous (the shared DOM
+  stub makes deferred assertions meaningless).
 
 ### Changed
 
@@ -124,19 +166,52 @@ new editor features, an accessibility layer, documentation and CI.
   cell cannot stack alerts.
 - Copy actions share one clipboard ladder (async clipboard → hidden textarea →
   prefilled dialog) instead of two implementations.
-- Snapshot tests were replaced by a 101-assertion suite (`tools/test.js`) that
+- Snapshot tests were replaced by a 118-assertion suite (`tools/test.js`) that
   fuzzes BFS against a reference implementation, checks generation invariants
   over hundreds of seeds, verifies share-code round trips, Markdown rendering
   and XSS escaping, image geometry, performance budgets and HTML ⇄ JS ⇄ CSS
   wiring — and **boots the real controller** in a dependency-free DOM stub to
   exercise painting, undo/redo, the route overlay, keyboard navigation, file
   loading, share links and exports. `tools/smoke-test.js` was folded into it.
+- **Typography** — a system stack with a real scale, restrained weights and
+  tighter tracking on headings; metadata is muted rather than dim.
+- **Layout** — floating glass header that gains a wash and shadow once content
+  scrolls under it (`#appHeader.scrolled`), a two-column editor that collapses to
+  a single column with a wide tool grid, and a documentation rail that becomes a
+  horizontally scrollable pill strip on small screens.
+- **Motion** — one vocabulary: micro 140 ms, standard 220 ms, structural 320 ms,
+  entrances 460 ms; interactive motion springs, structural motion eases.
+  Transform/opacity only, no animation loops, no animated blur.
+- **Buttons, fields, sliders, switches** — `--fill`-painted range tracks, an
+  animated switch knob, hover lift with press-scale, disabled = reduced opacity
+  *and* saturation, and a visible accessible focus ring everywhere.
+- **Dialogs and the drop overlay** — one floating-glass material, blurred
+  backdrop, fade + rise + scale entrance and a shorter exit.
+- **The board** — the deepest surface in the editor; it scrolls instead of
+  clipping if a level cannot be fitted, pans with one finger when no tool is
+  armed, and keeps its own state treatment (`is-empty`, `is-generating`).
+- **Accessibility** — `--text-3`, success, warning and danger were re-tuned to
+  clear 4.5:1 on both the page wash and the brightest glass; the toast host is
+  the single polite live region for notifications.
+- **Performance** — the background field is static (no animated blur) and the
+  document skeleton is a static placeholder, so the only looping animations in
+  the app are the loading spinner and the drop target's hint; the
+  scroll handler coalesces the header wash, the rail and the section spy into
+  one animation frame, and the toast layer is plain DOM instead of a library
+  render.
+- **Documentation** — `docs/DESIGN.md` rewritten as the design-system reference
+  (layers, tokens, materials, components, motion bands, accessibility), and
+  `docs/ARCHITECTURE.md`, `docs/TESTING.md` and `README.md` updated for the
+  three-stylesheet split, the toast layer, the skeleton, the mobile rail and the
+  new assertion count.
 
 ### Removed
 
 - `tools/smoke-test.js` (superseded by `tools/test.js`).
 - `tools/sri-hashes.js` (obsolete once the CDN links were removed).
 - Dead CSS for the accidental `btn-outline-warning` compound selector.
+- The `.lane-alt` cell variant, `.icon-slot`/`.icon--lg`, `.mat-inset` and the
+  `md-inline-code` hook — all unused once the design system was consolidated.
 
 ## [1.0.0] — Initial release
 

@@ -78,6 +78,14 @@
 
     function applyTheme(theme) {
         global.document.documentElement.setAttribute('data-theme', theme);
+        const meta = global.document.querySelector
+            && global.document.querySelector('meta[name="theme-color"]');
+        let wash = '';
+        try {
+            wash = global.getComputedStyle(global.document.documentElement)
+                .getPropertyValue('--bg-0').trim();
+        } catch (_) { /* fall through to the defaults below */ }
+        if (meta) meta.setAttribute('content', wash || (theme === 'dark' ? '#0a0b0f' : '#f7f8fb'));
         els.themeToggle.innerHTML = theme === 'dark'
             ? '<svg class="icon" aria-hidden="true"><use href="#i-sun"></use></svg>'
             : '<svg class="icon" aria-hidden="true"><use href="#i-moon"></use></svg>';
@@ -172,14 +180,26 @@
                 }
             }
             global.scrollTo({ top: 0, behavior: 'auto' });
+            els.appHeader.classList.toggle('scrolled', false);
         };
 
         if (cache.has(doc.file)) {
             render(cache.get(doc.file));
             return Promise.resolve();
         }
-        els.docBody.innerHTML = '<p class="docs-body__loading"><span class="spinner"></span>Loading ' +
-            escapeHtml(doc.file) + '…</p>';
+        // Skeleton shaped like a document (title, lead, body blocks) so the
+        // layout does not jump when the real content arrives.
+        els.docBody.innerHTML =
+            '<div class="docs-skeleton" aria-hidden="true">' +
+            '<span class="docs-skeleton__line docs-skeleton__line--title"></span>' +
+            '<span class="docs-skeleton__line docs-skeleton__line--lead"></span>' +
+            '<span class="docs-skeleton__line"></span>' +
+            '<span class="docs-skeleton__line docs-skeleton__line--short"></span>' +
+            '<span class="docs-skeleton__block"></span>' +
+            '<span class="docs-skeleton__line"></span>' +
+            '<span class="docs-skeleton__line docs-skeleton__line--short"></span>' +
+            '</div>' +
+            '<p class="sr-only">Loading ' + escapeHtml(doc.file) + '…</p>';
 
         return fetchText(doc.file)
             .then((text) => {
@@ -223,6 +243,10 @@
         els.docCount.textContent = needle
             ? `${visible} of ${DOCS.length} documents`
             : `${DOCS.length} documents`;
+        // Only claim "no match" when a filter actually excluded something: an
+        // empty list on `file://` means the fetch failed, not that the user
+        // searched for nothing.
+        if (els.docEmpty) els.docEmpty.classList.toggle('d-none', visible > 0 || !needle);
     }
 
     /* ------------------------------ Wiring ------------------------------ */
@@ -257,7 +281,8 @@
 
     function init() {
         ['themeToggle', 'docList', 'docBody', 'docError', 'docTitle', 'docBlurb', 'docFilter',
-            'tocBox', 'tocList', 'copyLinkBtn', 'rawLink', 'errorRawLink', 'appHeader', 'docCount']
+            'tocBox', 'tocList', 'copyLinkBtn', 'rawLink', 'errorRawLink', 'appHeader', 'docCount',
+            'docEmpty']
             .forEach((id) => { els[id] = $(id); });
 
         if (!global.ParkingGen || !global.ParkingGen.Markdown) {

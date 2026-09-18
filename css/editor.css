@@ -1,0 +1,722 @@
+/* ==========================================================================
+   editor.css — the level editor surface (index.html)
+   --------------------------------------------------------------------------
+   Everything here is built from the tokens and materials in style.css.
+
+     1.  Shell
+     2.  Panels
+     3.  New-level form
+     4.  Edit-mode banner
+     5.  Workspace, toolbar and grid
+     6.  Tools sidebar
+     7.  Stats
+     8.  JSON panel
+     9.  Drop overlay
+     10. Responsive
+   ========================================================================== */
+
+/* ==========================================================================
+   1. SHELL
+   ========================================================================== */
+
+.app-main {
+    position: relative;
+    z-index: var(--z-content);
+    max-width: var(--shell);
+    margin: 0 auto;
+    padding: clamp(20px, 4vw, 40px) var(--gutter) var(--s-8);
+}
+
+/* ==========================================================================
+   2. PANELS
+   ========================================================================== */
+
+.panel {
+    position: relative;
+    border-radius: var(--r-xl);
+    padding: var(--s-6);
+    margin-bottom: var(--s-5);
+    transition: box-shadow var(--dur-3) var(--ease-out), border-color var(--dur-3) var(--ease-out);
+}
+
+.panel:hover { box-shadow: var(--sh-3), inset 0 1px 0 var(--glass-surface-hi); }
+
+.panel__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2) var(--s-4);
+    margin-bottom: var(--s-5);
+}
+
+.panel__head--row { align-items: center; }
+.panel__title > .icon { color: var(--accent-1); font-size: 0.95em; }
+.panel__tools { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+
+/* ==========================================================================
+   3. NEW-LEVEL FORM
+   ========================================================================== */
+
+.controls { display: grid; gap: var(--s-5); }
+
+.controls__row {
+    display: grid;
+    gap: var(--s-4) var(--s-5);
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.controls__row--wide { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.controls__row--sliders { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+/* The action row is the only place where buttons wrap onto their own line. */
+.controls__row--actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3) var(--s-4);
+    padding-top: var(--s-5);
+    border-top: 1px solid var(--line-1);
+}
+
+.controls__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
+
+.controls__actions .btn { flex: 0 1 auto; }
+
+/* Route shape sits beside the sliders; keep it on the same baseline as the
+   controls it pairs with instead of stretching to the row height. */
+.field--route { align-self: end; }
+
+.field--route .field__input--select { min-width: 190px; }
+
+/* While a level is generating, the form dims and stops accepting input. */
+.controls.loading { opacity: 0.6; pointer-events: none; }
+
+/* ==========================================================================
+   4. EDIT-MODE BANNER
+   ========================================================================== */
+
+.mode-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    margin-bottom: var(--s-5);
+    padding: 10px 12px 10px var(--s-5);
+    border-radius: var(--r-lg);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-line);
+    box-shadow: inset 0 1px 0 var(--glass-panel-hi);
+    animation: banner-in var(--dur-3) var(--ease-spring);
+}
+
+@keyframes banner-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.mode-banner__text {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: var(--fs-md);
+    font-weight: 560;
+    color: var(--accent-2);
+}
+
+.mode-banner__text > .icon { font-size: 0.95em; }
+
+/* ==========================================================================
+   5. WORKSPACE, TOOLBAR AND GRID
+   ========================================================================== */
+
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 296px;
+    gap: var(--s-5);
+    align-items: start;
+    margin-bottom: var(--s-5);
+}
+
+.workspace__stage { min-width: 0; }
+
+.grid-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 8px 10px;
+    margin-bottom: var(--s-3);
+    border-radius: var(--r-lg);
+}
+
+.grid-toolbar__sep {
+    width: 1px;
+    height: 22px;
+    margin: 0 2px;
+    background: var(--line-1);
+}
+
+.grid-toolbar__tip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-inline-start: auto;
+    padding-inline-end: 6px;
+    font-size: var(--fs-xs);
+    color: var(--text-3);
+}
+
+.grid-toolbar__tip > .icon { font-size: 0.85em; }
+.grid-toolbar__tip kbd { font-size: 0.7rem; }
+
+.grid-stage { position: relative; }
+
+/* The board itself. `--cell-size` is written by app.js when zooming, and the
+   geometry depends on it, so nothing here may hard-code a cell measurement. */
+.grid-wrapper {
+    position: relative;
+    min-height: 260px;
+    padding: clamp(14px, 2.4vw, 28px);
+    border-radius: var(--r-xl);
+    /* Scroll rather than clip: a level larger than the viewport must stay
+       reachable (fitZoom handles the common case, this is the safety net).
+       Centering is done with auto margins because centred overflow would put
+       cells above/left of the scroll origin out of reach. */
+    overflow: auto;
+    overscroll-behavior: contain;
+    /* The board is the deepest surface in the editor: one tier quieter than
+       the panels around it, so the level reads as the thing being worked on. */
+    background-color: var(--glass-panel-bg);
+    border-color: var(--glass-panel-bd);
+    transition: box-shadow var(--dur-3) var(--ease-out), border-color var(--dur-3) var(--ease-out);
+}
+
+.grid-wrapper::after {
+    /* A whisper of inner shading so the board reads as recessed glass. */
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    /* One-off: an inner shade whose spread has to stay negative to hug the top
+       edge — the scale's ambient shadows cannot express that. */
+    box-shadow: inset 0 1px 0 var(--glass-surface-hi),
+        inset 0 18px 36px -30px rgba(16, 20, 32, 0.4);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 10), var(--cell-size));
+    gap: var(--cell-gap);
+    margin: 0 auto;
+    padding: var(--cell-gap);
+    border-radius: var(--r-md);
+    outline: none;
+    background: var(--lane-tint);
+    box-shadow: inset 0 0 0 1px var(--line-3);
+    /* With no tool selected a finger pans the board; with one selected every
+       gesture is a paint stroke, so the browser must not scroll. */
+    touch-action: pan-x pan-y;
+}
+
+.grid.editing { touch-action: none; }
+
+.grid:focus-visible {
+    outline: 2px solid var(--accent-1);
+    outline-offset: 4px;
+    border-radius: var(--r-md);
+}
+
+/* Cells ------------------------------------------------------------------ */
+
+.cell {
+    position: relative;
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border-radius: calc(var(--cell-size) * 0.24);
+    background: var(--asphalt-1);
+    box-shadow: inset 0 0 0 1px var(--asphalt-line);
+    transition:
+        background-color var(--dur-2) var(--ease-out),
+        box-shadow var(--dur-2) var(--ease-out),
+        transform var(--dur-1) var(--ease-out);
+}
+
+.grid.editing .cell { cursor: crosshair; }
+
+.cell:hover { background-color: var(--asphalt-2); }
+
+/* Entrance: one-shot, cheap (transform + opacity only). */
+.grid.enter .cell {
+    animation: cell-in var(--dur-3) var(--ease-out) backwards;
+    animation-delay: min(calc(var(--i, 0) * 3ms), 240ms);
+}
+
+.cell.pulse { animation: pulse-cell 260ms var(--ease-out); }
+
+/* Keyboard cursor -------------------------------------------------------- */
+
+.cell.cursor {
+    box-shadow:
+        inset 0 0 0 2px var(--accent-1),
+        0 0 0 3px var(--accent-soft);
+    z-index: var(--z-raised);
+}
+
+.cell.cursor::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    border: 1px solid var(--accent-line);
+    pointer-events: none;
+}
+
+/* Cars ------------------------------------------------------------------- */
+
+.cell.car {
+    background-color: var(--car-1);
+    background-image: linear-gradient(160deg, var(--car-hi) 0%, var(--car-1) 46%, var(--car-2) 100%);
+    box-shadow: var(--sh-cell), inset 0 0 0 1px color-mix(in srgb, var(--car-2) 70%, transparent);
+}
+
+/* Direction arrow drawn from a rotated CSS triangle: crisp at every zoom.
+   Its ink is a one-off — pure white at 92 % over the car gradient, which is
+   the only place in the app that needs a mark *on* a filled colour. */
+.cell.car::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-left: calc(var(--cell-size) * 0.15) solid transparent;
+    border-right: calc(var(--cell-size) * 0.15) solid transparent;
+    border-bottom: calc(var(--cell-size) * 0.26) solid rgba(255, 255, 255, 0.92);
+    transform: translate(-50%, -50%) rotate(0deg);
+    transition: transform var(--dur-2) var(--ease-spring);
+}
+
+.cell.car.up::before { transform: translate(-50%, -58%) rotate(0deg); }
+.cell.car.right::before { transform: translate(-50%, -50%) rotate(90deg); }
+.cell.car.down::before { transform: translate(-50%, -42%) rotate(180deg); }
+.cell.car.left::before { transform: translate(-50%, -50%) rotate(-90deg); }
+
+/* Start / exit ----------------------------------------------------------- */
+
+.cell.start,
+.cell.end {
+    display: grid;
+    place-items: center;
+    font-size: calc(var(--cell-size) * 0.54);
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    /* One-off: a 1 px contact shadow so the S/E glyphs hold up against any zoom. */
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.22);
+    letter-spacing: 0;
+}
+
+.cell.start {
+    background-color: var(--start-1);
+    background-image: linear-gradient(160deg, var(--start-hi) 0%, var(--start-1) 45%, var(--start-2) 100%);
+    box-shadow: var(--sh-cell);
+}
+
+.cell.end {
+    background-color: var(--end-1);
+    background-image: linear-gradient(160deg, var(--end-hi) 0%, var(--end-1) 45%, var(--end-2) 100%);
+    box-shadow: var(--sh-cell);
+}
+
+.cell.start::after { content: "S"; }
+.cell.end::after { content: "E"; }
+
+/* Route overlay ---------------------------------------------------------- */
+
+.cell.on-route {
+    background-color: var(--route-tint);
+    box-shadow:
+        inset 0 0 0 1.5px var(--accent-line),
+        0 0 0 1px var(--route-tint);
+}
+
+.cell.on-route.car {
+    /* A car on the route is still an obstacle — keep it clearly a car. */
+    box-shadow: var(--sh-cell), 0 0 0 2px var(--accent-line);
+}
+
+/* Overlays --------------------------------------------------------------- */
+
+.empty-state,
+.gen-veil {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 6px;
+    text-align: center;
+    padding: var(--s-6);
+    border-radius: var(--r-xl);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity var(--dur-3) var(--ease-out), visibility var(--dur-3);
+}
+
+.is-empty ~ .empty-state { opacity: 1; visibility: visible; }
+.is-generating ~ .gen-veil { opacity: 1; visibility: visible; }
+
+.empty-state > .icon {
+    font-size: 2rem;
+    margin-bottom: 6px;
+    color: var(--text-3);
+    opacity: 0.75;
+}
+
+.empty-state strong {
+    font-size: var(--fs-lg);
+    font-weight: 620;
+    letter-spacing: var(--track-normal);
+    color: var(--text-2);
+}
+
+.empty-state span {
+    max-width: 34ch;
+    font-size: var(--fs-sm);
+    line-height: 1.5;
+    color: var(--text-3);
+}
+
+.empty-state .btn {
+    margin-top: var(--s-3);
+    pointer-events: auto;
+}
+
+.gen-veil {
+    background: var(--veil-bg);
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    gap: var(--s-3);
+    font-size: var(--fs-md);
+    font-weight: 540;
+    color: var(--text-2);
+}
+
+.gen-veil .spinner { width: 22px; height: 22px; border-width: 2.5px; }
+
+/* Determinate progress, driven by the generator's onProgress callback. */
+.progress {
+    width: min(220px, 60%);
+    height: 5px;
+    border-radius: var(--r-pill);
+    background: var(--field-bg);
+    border: 1px solid var(--line-1);
+    overflow: hidden;
+}
+
+.progress__bar {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--accent-2), var(--accent-1));
+    transform: scaleX(var(--v, 0));
+    transform-origin: left center;
+    transition: transform 140ms linear;
+}
+
+/* ==========================================================================
+   6. TOOLS SIDEBAR
+   ========================================================================== */
+
+.sidebar {
+    position: sticky;
+    top: calc(var(--header-h) + 28px);
+    display: grid;
+    gap: var(--s-3);
+    padding: var(--s-4);
+    border-radius: var(--r-xl);
+}
+
+.sidebar__heading { padding: 0 2px; }
+
+.sidebar__divider {
+    height: 1px;
+    margin: var(--s-1) 0;
+    background: var(--line-1);
+}
+
+.tool-grid { display: grid; gap: 5px; }
+
+.tool {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 10px;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    transition:
+        background-color var(--dur-2) var(--ease-out),
+        border-color var(--dur-2) var(--ease-out),
+        transform var(--dur-1) var(--ease-out);
+}
+
+.tool:hover { background: var(--hover-surface); border-color: var(--line-1); }
+
+.tool:active {
+    background: var(--active-surface);
+    transform: scale(0.985);
+}
+
+.tool.active {
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+}
+
+.tool__icon {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    font-size: var(--fs-md);
+    color: var(--text-2);
+    background: var(--field-bg);
+    border: 1px solid var(--line-1);
+    border-radius: var(--r-xs);
+    transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out);
+}
+
+.tool.active .tool__icon {
+    color: var(--accent-1);
+    background: var(--glass-strong-bg);
+    border-color: var(--accent-line);
+}
+
+.tool__body { display: grid; gap: 1px; min-width: 0; }
+
+.tool__name {
+    font-size: var(--fs-md);
+    font-weight: 580;
+    letter-spacing: var(--track-normal);
+    color: var(--text-1);
+}
+
+.tool__desc {
+    font-size: var(--fs-xs);
+    line-height: 1.4;
+    color: var(--text-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tool__desc kbd { font-size: 0.68rem; padding: 0.08em 0.32em; }
+
+.tool__check {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+    color: var(--accent-ink);
+    background: var(--accent-1);
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-3) var(--ease-spring);
+}
+
+.tool.active .tool__check { opacity: 1; transform: scale(1); }
+
+/* ==========================================================================
+   7. STATS
+   ========================================================================== */
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    gap: 1px;
+    margin-bottom: var(--s-5);
+    padding: var(--s-2);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+}
+
+.stat {
+    display: grid;
+    gap: 3px;
+    padding: 11px 14px;
+    border-radius: var(--r-md);
+    transition: background-color var(--dur-2) var(--ease-out);
+}
+
+.stat:hover { background: var(--hover-surface); }
+
+.stat__value {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    font-size: var(--fs-lg);
+    font-weight: 620;
+    letter-spacing: var(--track-normal);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-1);
+    transition: color var(--dur-2) var(--ease-out);
+}
+
+.stat__value .icon { font-size: 0.8em; color: var(--text-3); }
+
+/* ==========================================================================
+   8. JSON PANEL
+   ========================================================================== */
+
+.json-body {
+    border-radius: var(--r-lg);
+    border: 1px solid var(--line-1);
+    background: var(--field-bg);
+    overflow: hidden;
+    transition: background-color var(--dur-2) var(--ease-out);
+}
+
+.json-code {
+    margin: 0;
+    padding: var(--s-4) var(--s-5);
+    max-height: 340px;
+    overflow: auto;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    line-height: 1.65;
+    color: var(--text-2);
+    tab-size: 2;
+    white-space: pre;
+}
+
+.json-code:focus-visible { outline: 2px solid var(--accent-1); outline-offset: -2px; }
+
+/* ==========================================================================
+   9. DROP OVERLAY
+   ========================================================================== */
+
+.drop-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-drop);
+    display: grid;
+    place-items: center;
+    padding: var(--gutter);
+    background: var(--drop-veil);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--dur-2) var(--ease-out), visibility var(--dur-2);
+    /* The overlay is decorative until a drag is actually in progress. */
+    pointer-events: none;
+}
+
+.drop-overlay.show { opacity: 1; visibility: visible; }
+
+.drop-card {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding: var(--s-8) var(--s-9);
+    text-align: center;
+    border-radius: var(--r-2xl);
+    animation: drop-in var(--dur-4) var(--ease-spring);
+}
+
+@keyframes drop-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.drop-card > .icon {
+    font-size: 2.1rem;
+    color: var(--accent-1);
+    margin-bottom: 8px;
+    animation: float-y 2.8s var(--ease-inout) infinite;
+}
+
+.drop-card strong {
+    font-size: var(--fs-lg);
+    font-weight: 640;
+    letter-spacing: var(--track-normal);
+}
+
+.drop-card span { font-size: var(--fs-md); color: var(--text-2); }
+
+/* ==========================================================================
+   10. RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 1120px) {
+    .workspace { grid-template-columns: minmax(0, 1fr); }
+
+    .sidebar {
+        position: static;
+        /* Tools become a wide, scannable grid under the board instead of a
+           narrow column beside it. */
+    }
+
+    .tool-grid { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+    .sidebar > .btn { justify-self: stretch; }
+
+    .sidebar .btn,
+    .sidebar .btn.w-full { width: auto; }
+
+    .sidebar__actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: var(--s-2);
+    }
+}
+
+@media (max-width: 860px) {
+    .mobile-nav { display: flex; }
+
+    /* Room for the floating rail. */
+    .app-main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+
+    .grid-toolbar__tip { display: none; }
+    .panel { padding: var(--s-5) var(--s-4); border-radius: var(--r-lg); }
+    .grid-wrapper { border-radius: var(--r-lg); }
+    .stats { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
+}
+
+@media (max-width: 640px) {
+    .app-main { padding-top: var(--s-4); }
+    .hero { margin-bottom: var(--s-6); }
+    .hero__sub { font-size: var(--fs-base); }
+
+    .controls__actions { width: 100%; }
+    .controls__actions .btn { flex: 1 1 auto; }
+
+    .grid-toolbar { gap: 6px; padding: 7px 8px; }
+    .grid-toolbar__sep { display: none; }
+
+    .stat { padding: 9px 12px; }
+    .stat__value { font-size: var(--fs-md); }
+
+    .json-code { max-height: 260px; padding: var(--s-3); }
+
+    .drop-card { padding: var(--s-7) var(--s-6); }
+
+    .toast-host {
+        right: var(--s-4);
+        left: var(--s-4);
+        width: auto;
+        bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
+}

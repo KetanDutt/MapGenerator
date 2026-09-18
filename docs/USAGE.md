@@ -167,7 +167,25 @@ self-contained format, or turn it off for files roughly a third of the size.
 
 The moon/sun button (top-right, or <kbd>D</kbd>) toggles light and dark themes.
 Your choice is saved in `localStorage`; on first visit the app follows your OS
-`prefers-color-scheme`. Dialogs (vendored SweetAlert2) match the active theme.
+`prefers-color-scheme` — and the browser's own chrome follows along through a
+`theme-color` meta tag. Every surface, dialog, notification and even the
+exported PNG matches the active theme.
+
+The interface is built from translucent materials over a soft background, so a
+few details are deliberate rather than accidental:
+
+- **Text is never translucent.** Blur applies to surfaces only, and the palette
+  is contrast-checked in both themes.
+- **Glass costs nothing while idle.** The background is static (no animated
+  blurs), and only `transform`/`opacity` are animated.
+- **Motion follows your system setting.** With *Reduce motion* enabled,
+  entrances and hover lifts stop, and state changes stay visible.
+- **Reduce transparency** (where the OS offers it) replaces the glass with
+  near-opaque surfaces, and the same fallback applies in browsers without
+  `backdrop-filter`.
+- **On phones** the tools move below the board, notifications dock above a
+  compact section rail, and the board itself pans with one finger when no tool
+  is armed.
 
 ## Keyboard shortcuts
 
