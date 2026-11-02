@@ -284,7 +284,7 @@
 
         // Keep the browser chrome in step with the app on mobile.
         const meta = global.document.querySelector && global.document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', cssColor('--bg-0', state.theme === 'dark' ? '#0a0b0f' : '#f7f8fb'));
+        if (meta) meta.setAttribute('content', cssColor('--bg-0', state.theme === 'dark' ? '#101114' : '#f2f3f5'));
         try {
             global.localStorage.setItem(STORAGE.theme, state.theme);
         } catch (_) { /* private mode / storage disabled */ }
@@ -382,7 +382,6 @@
                 cell.className = 'cell';
                 cell.dataset.x = x;
                 cell.dataset.y = y;
-                cell.style.setProperty('--i', i++);   // staggered entrance delay
                 paintCell(cell, x, y);
                 frag.appendChild(cell);
             }
@@ -399,7 +398,7 @@
         state.appliedRoute = new Set();
         if (state.cursor) applyCursorCell(state.cursor.x, state.cursor.y);
 
-        // One-shot staggered entrance, disarmed after the animation window.
+        // One-shot entrance, disarmed after the animation window.
         els.gridContainer.classList.remove('enter');
         void els.gridContainer.offsetWidth;
         els.gridContainer.classList.add('enter');

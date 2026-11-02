@@ -1,7 +1,7 @@
 # Architecture
 
 The app is a small set of dependency-free vanilla-JS modules plus a
-self-contained glass CSS design system, an inline SVG icon sprite and a
+self-contained flat CSS design system, an inline SVG icon sprite and a
 **vendored** (but optional) SweetAlert2 dialog layer. There is **no build step**
 and **no network access**: each script attaches its public API to a shared
 `globalThis.ParkingGen` namespace, and the HTML pages load them in dependency
@@ -190,7 +190,7 @@ Internals are grouped into sections:
 - **I/O** — file picker, whole-window drag & drop, JSON export/copy (with a
   grid-matrix toggle), PNG export, share-link copy, clipboard fallbacks, and a
   repair report for loaded files.
-- **Notifications** — `toast()` renders into `#toastHost` (floating glass,
+- **Notifications** — `toast()` renders into `#toastHost` (floating cards,
   stacked, auto-dismissing, deduped) instead of SweetAlert2, which stays in
   charge of modals where focus trapping matters. Screen-reader output goes
   through the single `#liveRegion`, so assistive tech never hears the same
@@ -201,24 +201,24 @@ Internals are grouped into sections:
 
 ### `css/style.css` + `css/editor.css` + `css/docs.css`
 
-A self-contained glass design system (no CSS framework, no preprocessor):
+A self-contained flat design system (no CSS framework, no preprocessor):
 
 - **`css/style.css`** holds the tokens (`:root` plus the `[data-theme="dark"]`
-  override): colour, glass materials, blur levels, radii, shadows, spacing,
+  override): colour, surface tiers, radii, shadows, spacing,
   type scale, motion bands, easing, z-index layers — then the reset, the
   background field, the shared primitives (buttons, fields, header, footer,
   dialogs, toasts), utilities and the reduced-motion/print rules.
 - **`css/editor.css`** and **`css/docs.css`** add the two page surfaces, using
   only those tokens. Both load after `style.css`, so either page can restyle a
   shared primitive without touching the other.
-- **Four materials, tiered by role** (`.glass-1` navigation/dialogs,
+- **Four surface tiers, tiered by role** (`.glass-1` navigation/dialogs,
   `.glass-2` panels, `.glass-3` floating surfaces, plus the quieter
-  `--glass-panel-*` tier for the board), each a single backdrop-filter layer —
-  no nested blur stacks, no animated filters.
+  `--glass-panel-*` tier for the board) — opaque fills with one hairline
+  border and one shadow step, no backdrop-filter anywhere.
 - **Opaque ink.** Blur and tint only ever apply to surfaces; text uses tokens
-  that are contrast-checked against the glass they sit on, and tinted chips use
-  dedicated `-ink` colours. `prefers-reduced-transparency` and the
-  `@supports not (backdrop-filter)` fallback both raise surface opacity.
+  that are contrast-checked against the surface they sit on, and tinted chips
+  use dedicated `-ink` colours. Every tier is opaque, so there is no
+  transparency preference or blur fallback to maintain.
 - The grid uses `grid-template-columns: repeat(var(--cols), var(--cell-size))`,
   and car arrows are pure CSS triangles sized off `var(--cell-size)`, so zoom
   never distorts them. Motion is CSS-only (transform/opacity, GPU-friendly),

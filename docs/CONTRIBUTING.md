@@ -44,7 +44,7 @@ the manual release checklist.
 - **Performance**: search with the reusable workspaces from
   `Pathfinding.createWorkspace`/`createSolver`, and route DOM/JSON updates
   through `scheduleViewSync()` — never do heavy work inside a pointer handler.
-- Keep all theme colours, sizes, durations and blur levels as tokens in
+- Keep all theme colours, sizes, durations and surface tiers as tokens in
   `css/style.css` (page-specific rules go in `css/editor.css` or
   `css/docs.css`), and add a rule for any class JS toggles — the test suite
   fails on a JS-toggled class *and* on a class used in markup that no stylesheet
@@ -85,7 +85,7 @@ the manual release checklist.
 - **Renderer targets** — `js/image.js` is deliberately split into pure geometry
   (`computeLayout`) and canvas drawing; an SVG or Tiled exporter can reuse the
   first and swap the second.
-- **UI surfaces** — the tokens in `css/style.css` cover colour, glass, motion,
+- **UI surfaces** — the tokens in `css/style.css` cover colour, surfaces, motion,
   depth and geometry, and the three stylesheets split shared primitives from the
   two page surfaces; see [DESIGN.md](DESIGN.md) before inventing new values, and
   reuse an existing material/radius/duration band rather than adding one.

@@ -176,13 +176,10 @@ few details are deliberate rather than accidental:
 
 - **Text is never translucent.** Blur applies to surfaces only, and the palette
   is contrast-checked in both themes.
-- **Glass costs nothing while idle.** The background is static (no animated
-  blurs), and only `transform`/`opacity` are animated.
+- **Surfaces cost nothing while idle.** The page is flat (no blur layers), and
+  only `transform`/`opacity` are animated.
 - **Motion follows your system setting.** With *Reduce motion* enabled,
-  entrances and hover lifts stop, and state changes stay visible.
-- **Reduce transparency** (where the OS offers it) replaces the glass with
-  near-opaque surfaces, and the same fallback applies in browsers without
-  `backdrop-filter`.
+  entrances stop and state changes stay visible — they just stop moving.
 - **On phones** the tools move below the board, notifications dock above a
   compact section rail, and the board itself pans with one finger when no tool
   is armed.

@@ -7,7 +7,7 @@
     <meta name="description"
         content="A deterministic, seed-based generator and editor for grid-based parking lot puzzle levels.">
     <meta name="color-scheme" content="light dark">
-    <meta name="theme-color" content="#f4f5f8">
+    <meta name="theme-color" content="#f2f3f5">
     <title>Parking Lot Level Generator</title>
     <link rel="icon"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232e6bee'/%3E%3Ctext x='50' y='72' font-size='68' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
@@ -27,10 +27,7 @@
 <body>
     <a class="skip-link" href="#workspace">Skip to the level workspace</a>
 
-    <!-- Ambient background field (Layer 0) -->
-    <div class="ambient" aria-hidden="true"></div>
-
-    <!-- Floating glass navigation (Layer 3) -->
+    <!-- Sticky navigation -->
     <header class="app-header" id="appHeader">
         <div class="app-header__inner glass-1">
             <div class="app-brand">
@@ -69,7 +66,7 @@
             aria-labelledby="controlsTitle">
             <div class="panel__head">
                 <h2 class="panel__title" id="controlsTitle">
-                    <svg class="icon" aria-hidden="true"><use href="#i-wand-magic-sparkles"></use></svg>New level
+                    <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg>New level
                 </h2>
                 <span class="panel__hint">Same seed, size and difficulty always rebuild the same level.</span>
             </div>
@@ -87,9 +84,7 @@
 
                     <!-- Seed -->
                     <div class="field">
-                        <label for="seed" class="field__label">
-                            <svg class="icon" aria-hidden="true"><use href="#i-dice"></use></svg>Seed
-                        </label>
+                        <label for="seed" class="field__label">Seed</label>
                         <div class="inputgroup">
                             <input type="text" class="field__input" id="seed" name="seed"
                                 placeholder="Any text — same seed, same level" autocomplete="off">
@@ -175,7 +170,7 @@
 
                     <div class="controls__actions">
                         <button type="submit" class="btn btn--primary">
-                            <svg class="icon" aria-hidden="true"><use href="#i-wand-magic-sparkles"></use></svg>Generate
+                            <svg class="icon" aria-hidden="true"><use href="#i-dice"></use></svg>Generate
                         </button>
                         <button type="button" class="btn btn--tint-success" id="exportBtn" disabled
                             title="Download the level as JSON (Ctrl/Cmd+S)">
@@ -259,8 +254,7 @@
                     <div class="empty-state">
                         <svg class="icon" aria-hidden="true"><use href="#i-square-parking"></use></svg>
                         <strong>Empty lot</strong>
-                        <span>The lot is waiting: place vehicles by hand, or generate a packed level in
-                            one click.</span>
+                        <span>Place vehicles by hand, or generate a level from a seed.</span>
                         <button class="btn btn--sm btn--secondary" id="emptyAddCarBtn" type="button">
                             <svg class="icon" aria-hidden="true"><use href="#i-car"></use></svg>Add cars
                         </button>
@@ -447,13 +441,13 @@
         <div class="mobile-nav__list glass-3">
             <span class="mobile-nav__ind" aria-hidden="true"></span>
             <a class="mobile-nav__link is-active" href="#controlsPanel" data-target="controlsPanel">
-                <svg class="icon" aria-hidden="true"><use href="#i-wand-magic-sparkles"></use></svg>Level
+                <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg>Level
             </a>
             <a class="mobile-nav__link" href="#workspace" data-target="workspace">
                 <svg class="icon" aria-hidden="true"><use href="#i-square-parking"></use></svg>Lot
             </a>
             <a class="mobile-nav__link" href="#statsSection" data-target="statsSection">
-                <svg class="icon" aria-hidden="true"><use href="#i-lightbulb"></use></svg>Stats
+                <svg class="icon" aria-hidden="true"><use href="#i-list-ul"></use></svg>Stats
             </a>
             <a class="mobile-nav__link" href="#jsonPanel" data-target="jsonPanel">
                 <svg class="icon" aria-hidden="true"><use href="#i-code"></use></svg>JSON

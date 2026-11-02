@@ -1,4 +1,4 @@
-# 🅿️ Parking Lot Level Generator
+# Parking Lot Level Generator
 
 A **100% client-side, zero-build** tool for generating and editing grid-based
 parking-lot puzzle levels. It produces deterministic, seed-based levels packed
@@ -10,7 +10,7 @@ game engine can load directly, as a shareable link, or as a PNG mock-up.
 
 ---
 
-## ✨ Features
+## Features
 
 | Area | What you get |
 | --- | --- |
@@ -28,12 +28,12 @@ game engine can load directly, as a shareable link, or as a PNG mock-up.
 | **Sharing** | Compact share codes restore the *exact* level — including hand edits |
 | **Zoom** | Zoom in / out / fit for grids up to 60×60, with auto re-fit on resize |
 | **Keyboard** | Full arrow-key grid navigation plus shortcuts for every common action |
-| **Interface** | One glass design system across both pages: layered translucent materials, a floating scroll-reactive header, a compact mobile rail, animated dialogs and toasts, skeleton loading and a first-class dark theme |
-| **UX** | Session restore, accessible dialogs, floating toast notifications, contrast-checked palettes, `prefers-reduced-motion` and `prefers-reduced-transparency` support |
+| **Interface** | One flat design system across both pages: tiered solid surfaces, a sticky scroll-reactive header, a compact mobile rail, animated dialogs and toasts, skeleton loading and a first-class dark theme |
+| **UX** | Session restore, accessible dialogs, floating toast notifications, contrast-checked palettes and `prefers-reduced-motion` support |
 | **Offline-first** | No CDN, no trackers, no network: icons ship as an inline SVG sprite and dialogs as a vendored, optional library — `file://` works out of the box |
 | **Accessible** | Keyboard-navigable grid, focus rings, live-region announcements, `prefers-reduced-motion` support |
 
-## 🚀 Quick start
+## Quick start
 
 No install, no build step — only a static file server for the nice-to-have
 features (share-link loading, docs viewer, clipboard in some browsers):
@@ -55,18 +55,18 @@ workspace is never empty.
 
 ### Generate your first level
 
-1. Type anything into the **Seed** box (or hit the 🎲 shuffle button for a random one).
+1. Type anything into the **Seed** box (or hit the shuffle button for a random one).
 2. Set **width**, **height** and **difficulty** with the sliders.
 3. Pick a **Route shape** — `Direct` for a clean layout, `Maze` for a puzzle.
 4. Keep **"Guarantee solvable path"** checked for levels you ship to players.
 5. Click **Generate**. Tweak by hand, press **Show route** to sanity-check the
    puzzle, then **Export JSON** / **Copy link**.
 
-> 💡 The same (seed, width, height, difficulty, route shape, guarantee)
+> The same (seed, width, height, difficulty, route shape, guarantee)
 > combination always reproduces the exact same level — great for sharing level
 > codes with your team.
 
-## 🕹️ Editing tools
+## Editing tools
 
 Select a tool in the right-hand sidebar (keys <kbd>1</kbd>–<kbd>5</kbd>, or
 <kbd>Esc</kbd> to cancel):
@@ -84,7 +84,7 @@ status badge in the stats bar flips to **Blocked** (red) whenever your edits
 sever every start→exit route, and exporting a blocked level asks for
 confirmation first.
 
-## ⌨️ Keyboard shortcuts
+## Keyboard shortcuts
 
 | Key | Action |
 | --- | --- |
@@ -102,14 +102,14 @@ confirmation first.
 | <kbd>Esc</kbd> | Cancel the active tool |
 | <kbd>?</kbd> | Show the shortcut list in-app |
 
-## 📁 Project structure
+## Project structure
 
 ```
 MapGenerator/
 ├── index.html            # Level editor (markup + local stylesheets/scripts)
 ├── docs.html             # In-app documentation browser
 ├── css/
-│   ├── style.css         # Design system: tokens, background field, glass materials,
+│   ├── style.css         # Design system: tokens, plan grid, surface tiers,
 │   │                     #   shared controls, dialogs, toasts, motion, accessibility
 │   ├── editor.css        # Level editor surface: panels, board, tools, stats, JSON
 │   └── docs.css          # Documentation viewer shell + Markdown typography
@@ -148,7 +148,7 @@ Everything application-specific lives in `js/` and is loaded as plain
 app works over `file://` as well as any static host. See
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the reasoning.
 
-## 🧪 Tests
+## Tests
 
 ```bash
 npm test                 # or: node tools/test.js
@@ -171,7 +171,7 @@ browser test we can run with zero dependencies, and it stops anyone shipping a
 class that no stylesheet defines — the same suite audits the markup against the
 design system. The suite exits non-zero on failure, so it drops straight into CI.
 
-## 📖 Documentation
+## Documentation
 
 - [Usage guide](docs/USAGE.md) — detailed walkthrough of every feature
 - [Level JSON format](docs/LEVEL_FORMAT.md) — schema for consuming/generating levels
@@ -184,16 +184,15 @@ design system. The suite exits non-zero on failure, so it drops straight into CI
 Prefer reading them in the browser? `docs.html` renders every document with a
 table of contents and a search box (`npm run serve`, then open `/docs.html`).
 
-## 🛠️ Tech notes
+## Tech notes
 
 - **No bundler / framework for app code** — vanilla JS in small, documented files.
 - **No CSS framework** — the UI is a self-contained design system
   (`css/style.css` + `css/editor.css` + `css/docs.css`): centralized tokens
-  (colour, glass opacity, blur, radii, shadows, spacing, type, motion, depth),
-  tiered glass materials, and a first-class dark theme. Text is never
-  translucent, contrast is checked per surface, and motion is CSS-only
-  (transform/opacity), GPU-friendly, and honours `prefers-reduced-motion` and
-  `prefers-reduced-transparency`. See [docs/DESIGN.md](docs/DESIGN.md).
+  (colour, radii, shadows, spacing, type, motion, depth), four flat surface
+  tiers, and a first-class dark theme. Contrast is checked per surface, and
+  motion is CSS-only (transform/opacity), GPU-friendly, and honours
+  `prefers-reduced-motion`. See [docs/DESIGN.md](docs/DESIGN.md).
 - **No runtime dependencies, no network.** Icons are an inline SVG sprite
   (`js/icons.js`, Font Awesome Free artwork, CC BY 4.0); modals use SweetAlert2
   **vendored** in `vendor/` (MIT) — notifications are the app's own DOM. Nothing
@@ -208,6 +207,6 @@ table of contents and a search box (`npm run serve`, then open `/docs.html`).
   skipped entirely while collapsed — so drag-painting stays smooth even on
   60×60 grids.
 
-## 📄 License
+## License
 
 Released under the [MIT License](LICENSE).
