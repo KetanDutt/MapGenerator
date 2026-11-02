@@ -38,7 +38,7 @@
             slug: 'design',
             file: 'docs/DESIGN.md',
             title: 'Design system',
-            blurb: 'Tokens, glass materials and motion rules behind the UI.'
+            blurb: 'Tokens, surface tiers and motion rules behind the UI.'
         },
         {
             slug: 'testing',
@@ -85,7 +85,7 @@
             wash = global.getComputedStyle(global.document.documentElement)
                 .getPropertyValue('--bg-0').trim();
         } catch (_) { /* fall through to the defaults below */ }
-        if (meta) meta.setAttribute('content', wash || (theme === 'dark' ? '#0a0b0f' : '#f7f8fb'));
+        if (meta) meta.setAttribute('content', wash || (theme === 'dark' ? '#101114' : '#f2f3f5'));
         els.themeToggle.innerHTML = theme === 'dark'
             ? '<svg class="icon" aria-hidden="true"><use href="#i-sun"></use></svg>'
             : '<svg class="icon" aria-hidden="true"><use href="#i-moon"></use></svg>';

@@ -8,14 +8,14 @@ semantic versioning.
 
 A production-hardening pass: bug fixes, a faster and more capable generator,
 new editor features, an accessibility layer, documentation and CI. It closes
-with a **full interface pass** — one glass design system across both pages, an
+with a **full interface pass** — one flat design system across both pages, an
 in-app notification layer, and a layout built for phones rather than shrunk down
 to them. No behaviour, API, route, data or user flow changed, and the suite grew
 from 101 to 118 assertions (the one existing assertion that read
 `css/style.css` now reads all three stylesheets, since a rule may live in any of
 them).
 
-### ⚠️ Behaviour changes
+### Behaviour changes
 
 - **Generated levels differ from 1.x for the same seed.** Start/exit are drawn
   from one global shuffle (guaranteeing two distinct cells), the route modes
@@ -58,6 +58,10 @@ them).
 - Loading a level could write to `state.level` before a level existed (name
   field), and `App.init()` never ran when the script was evaluated after
   `DOMContentLoaded`.
+- The `lane-alt` class written by the painter for alternating aisles had no
+  stylesheet rule, so the rows/columns shading never rendered on screen (the
+  PNG export already drew it). The board now shows the checkerboard in both
+  places.
 - `sanitizeLevel()` cross-checked the embedded grid against a row that might
   not be an array, and iterated an unbounded car list.
 - The file reader accepted anything with a `.json` name and rejected valid
@@ -117,16 +121,14 @@ them).
   in-app browser (`docs.html`) that renders every document with a table of
   contents and a filter box.
 - **One design system across both pages** — `css/style.css` (tokens,
-  materials, shared primitives) plus `css/editor.css` and `css/docs.css` for the
-  two surfaces. Every colour, radius, blur, shadow, duration, easing and z-index
+  surface tiers, shared primitives) plus `css/editor.css` and `css/docs.css` for
+  the two surfaces. Every colour, radius, shadow, duration, easing and z-index
   is a token; nothing is hard-coded per component.
-- **Four glass materials** (navigation/dialogs, panels, floating surfaces, and a
-  quieter tier for the board) with per-tier blur, saturation, inner highlight
-  and ambient shadow, plus opaque fallbacks for
-  `prefers-reduced-transparency: reduce` and browsers without
-  `backdrop-filter`.
+- **Four flat surface tiers** (navigation/dialogs, panels, floating surfaces,
+  and a quieter tier for the board): opaque fills, one hairline border, one
+  shadow step — no blur, no backdrop-filter, no inset sheen anywhere.
 - **In-app toast layer** — notifications render into `#toastHost` as floating
-  glass cards (stacked, deduped, auto-dismissing, hover-pauses the countdown,
+  cards (stacked, deduped, auto-dismissing, hover-pauses the countdown,
   dismissible, announced through the toast host). SweetAlert2 keeps the modals,
   where focus trapping matters.
 - **Determinate generation progress** — the veil shows a progress bar fed by the
@@ -173,31 +175,31 @@ them).
   wiring — and **boots the real controller** in a dependency-free DOM stub to
   exercise painting, undo/redo, the route overlay, keyboard navigation, file
   loading, share links and exports. `tools/smoke-test.js` was folded into it.
-- **Typography** — a system stack with a real scale, restrained weights and
-  tighter tracking on headings; metadata is muted rather than dim.
-- **Layout** — floating glass header that gains a wash and shadow once content
-  scrolls under it (`#appHeader.scrolled`), a two-column editor that collapses to
-  a single column with a wide tool grid, and a documentation rail that becomes a
+- **Typography** — a system stack with a real scale, three weights (400/500/600)
+  and tighter tracking on headings; labels are sentence case, metadata is muted
+  rather than dim.
+- **Layout** — a sticky bar that becomes a solid surface once content scrolls
+  under it (`#appHeader.scrolled`), a two-column editor that collapses to a
+  single column with a wide tool grid, and a documentation rail that becomes a
   horizontally scrollable pill strip on small screens.
 - **Motion** — one vocabulary: micro 140 ms, standard 220 ms, structural 320 ms,
-  entrances 460 ms; interactive motion springs, structural motion eases.
-  Transform/opacity only, no animation loops, no animated blur.
+  entrances 460 ms; a single easing curve (`cubic-bezier(0.22, 1, 0.36, 1)`)
+  across the app. Transform/opacity only, no animation loops.
 - **Buttons, fields, sliders, switches** — `--fill`-painted range tracks, an
-  animated switch knob, hover lift with press-scale, disabled = reduced opacity
-  *and* saturation, and a visible accessible focus ring everywhere.
-- **Dialogs and the drop overlay** — one floating-glass material, blurred
-  backdrop, fade + rise + scale entrance and a shorter exit.
+  animated switch knob, recolour-on-hover with press-scale, disabled = reduced
+  opacity *and* saturation, and a visible accessible focus ring everywhere.
+- **Dialogs and the drop overlay** — one floating tier, a flat veil, fade + rise
+  + scale entrance and a shorter exit.
 - **The board** — the deepest surface in the editor; it scrolls instead of
   clipping if a level cannot be fitted, pans with one finger when no tool is
   armed, and keeps its own state treatment (`is-empty`, `is-generating`).
 - **Accessibility** — `--text-3`, success, warning and danger were re-tuned to
-  clear 4.5:1 on both the page wash and the brightest glass; the toast host is
+  clear 4.5:1 on both the page wash and the brightest surface; the toast host is
   the single polite live region for notifications.
-- **Performance** — the background field is static (no animated blur) and the
-  document skeleton is a static placeholder, so the only looping animations in
-  the app are the loading spinner and the drop target's hint; the
-  scroll handler coalesces the header wash, the rail and the section spy into
-  one animation frame, and the toast layer is plain DOM instead of a library
+- **Performance** — no animated filters and a static document skeleton, so the
+  only looping animations in the app are the loading spinner; the scroll
+  handler coalesces the header state, the rail and the section spy into one
+  animation frame, and the toast layer is plain DOM instead of a library
   render.
 - **Documentation** — `docs/DESIGN.md` rewritten as the design-system reference
   (layers, tokens, materials, components, motion bands, accessibility), and
